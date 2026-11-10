@@ -5,6 +5,7 @@ import { db, toClient, isAdmin, STAT, body, send, wrap } from '../_lib.js';
 // DELETE /api/incidents/:id  -> admin
 export default wrap(async (req, res) => {
   const id = String(req.query?.id || new URL(req.url, 'http://x').pathname.split('/').pop()).toUpperCase();
+  if (!/^INC-\d{4,6}$/.test(id)) return send(res, 404, { error: 'Not found' });
   const admin = isAdmin(req);
   if (req.method === 'GET') { const r = await db.get(id); return r ? send(res, 200, toClient(r, admin)) : send(res, 404, { error: 'Not found' }); }
   if (req.method === 'PATCH') {
