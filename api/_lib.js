@@ -22,7 +22,8 @@ async function sb(path, opts = {}) {
   if (!url || !key) throw Object.assign(new Error('Database not configured'), { status: 500 });
   const r = await fetch(url + '/rest/v1/' + path, {
     ...opts,
-    headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'return=representation', ...(opts.headers || {}) }
+    // new-style keys (sb_secret_...) go only in the apikey header; legacy JWT keys also as Bearer
+    headers: { apikey: key, ...(key.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + key }), 'Content-Type': 'application/json', Prefer: 'return=representation', ...(opts.headers || {}) }
   });
   const txt = await r.text();
   if (!r.ok) throw Object.assign(new Error('DB error: ' + txt), { status: r.status === 409 ? 409 : 502 });
