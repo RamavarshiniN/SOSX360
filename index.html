@@ -124,6 +124,8 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
 .scene-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
 .scene-hint{position:absolute;right:12px;top:12px;font:500 11px "JetBrains Mono";color:var(--mu)}
 .scene-fallback{padding:24px;color:var(--mu)}
+.scene-labels{position:absolute!important;inset:0;pointer-events:auto}.scene-lbl{font:600 11px "JetBrains Mono";padding:3px 7px;border-radius:4px;white-space:nowrap;pointer-events:none}.scene-lbl.crit{background:rgba(229,72,77,.92);color:#fff}.scene-lbl.team{background:rgba(11,22,40,.85);color:#9cc9ff;border:1px solid #2a5fa8}.scene-hint,.scene-legend,.scene-tip{z-index:3}
+
 /* flow list instead of 3 identical cards */
 .flow{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--bd);border-radius:var(--r-md);overflow:hidden}
 .flow li{padding:18px;border-right:1px solid var(--bd);background:var(--p)}.flow li:last-child{border-right:0}
@@ -634,7 +636,15 @@ $('close').addEventListener('click',function(){$('dlg').close();list();dash()});
 function ll(a){var c=[[13.0604,80.2496],[12.901,80.2279],[13.0418,80.2341],[12.9815,80.218],[13.0012,80.2565]];a.forEach(function(x,k){x.lat=c[k][0];x.lng=c[k][1]});return a}
 var map,layer,geoBusy=false,SC={Low:'#6EE79A',Medium:'#FFD04D',High:'#FF9A4D',Critical:'#E11D2E'};
 function geocode(i){
-  return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(i.loc)).then(function(r){return r.json()}).then(function(a){if(a&&a[0]){i.lat=+a[0].lat;i.lng=+a[0].lon;q('PATCH','/incidents/'+i.id,{lat:i.lat,lng:i.lng})}else{i.nogeo=1};save()}).catch(function(){if(navigator.onLine)i.nogeo=1});
+  var base=(i.loc||'').trim(),tries=[base,base+', Chennai, India',base.split(/[ ,]+/)[0]+', Chennai, India'];
+  function one(k){
+    if(k>=tries.length){i.nogeo=1;save();return Promise.resolve()}
+    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q='+encodeURIComponent(tries[k])).then(function(r){return r.json()}).then(function(a){
+      if(a&&a[0]){i.lat=+a[0].lat;i.lng=+a[0].lon;delete i.nogeo;save();q('PATCH','/incidents/'+i.id,{lat:i.lat,lng:i.lng});return}
+      return one(k+1);
+    });
+  }
+  return one(0).catch(function(){});
 }
 function geoFill(){
   if(geoBusy||!navigator.onLine)return;var t=mem.filter(function(i){return typeof i.lat!=='number'&&!i.nogeo})[0];if(!t)return;
@@ -826,123 +836,164 @@ if('serviceWorker' in navigator)window.addEventListener('load',function(){naviga
 })();
 </script>
 <script type="module">
-/* SOSX360 3D command view: real incidents and teams projected onto a Chennai ground plane.
-   Pillar height = live priority score, colour = severity, arcs = active dispatch routes. */
+/* SOSX360 3D command view.
+   Ground = real Chennai street map (Esri dark basemap tiles, Web Mercator) drawn onto a WebGL plane,
+   so every beacon sits on its true street position. Beacon height = live priority score,
+   colour = severity, arcs = active team-to-incident dispatches. Bloom pass for the glow. */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
 const S = window.SOSX; if (!S) throw new Error('SOSX not ready');
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const C0 = { lat: 12.99, lng: 80.24 }, K = 95;
-const P = (lat, lng) => new THREE.Vector3((lng - C0.lng) * K, 0, -(lat - C0.lat) * K);
-const SEVC = { Low: 0x46a758, Medium: 0xf5d90a, High: 0xf76b15, Critical: 0xe5484d };
+const Z = 13, BOX = { n: 13.135, s: 12.86, w: 80.13, e: 80.33 };
+const SEVC = { Low: 0x46a758, Medium: 0xf5d90a, High: 0xf76b15, Critical: 0xff4d55 };
 
-function seeded(n) { let s = n; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+// Web Mercator helpers (pixel space at zoom Z)
+const px = lng => (lng + 180) / 360 * 256 * 2 ** Z;
+const py = lat => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 256 * 2 ** Z; };
+const X0 = Math.floor(px(BOX.w) / 256), X1 = Math.floor(px(BOX.e) / 256), Y0 = Math.floor(py(BOX.n) / 256), Y1 = Math.floor(py(BOX.s) / 256);
+const W = (X1 - X0 + 1) * 256, H = (Y1 - Y0 + 1) * 256, U = 40 / W; // plane is 40 units wide
+const cx = X0 * 256 + W / 2, cy = Y0 * 256 + H / 2;
+const P = (lat, lng, y = 0) => new THREE.Vector3((px(lng) - cx) * U, y, (py(lat) - cy) * U);
+
+function groundTexture(done) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'); g.fillStyle = '#0f1013'; g.fillRect(0, 0, W, H);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  let left = (X1 - X0 + 1) * (Y1 - Y0 + 1);
+  for (let x = X0; x <= X1; x++) for (let y = Y0; y <= Y1; y++) {
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { g.drawImage(im, (x - X0) * 256, (y - Y0) * 256); tex.needsUpdate = true; if (!--left) done && done(); };
+    im.onerror = () => { if (!--left) done && done(); };
+    im.src = `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${Z}/${y}/${x}`;
+  }
+  return tex;
+}
+function glowSprite(hex) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const col = new THREE.Color(hex), rgb = `${col.r * 255 | 0},${col.g * 255 | 0},${col.b * 255 | 0}`;
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, `rgba(${rgb},.9)`); gr.addColorStop(.35, `rgba(${rgb},.35)`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const GLOW = {}; const glow = h => GLOW[h] || (GLOW[h] = glowSprite(h));
 
 function mount(host) {
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
-  catch (e) { host.classList.add('no3d'); host.innerHTML = '<p class="scene-fallback">3D view needs WebGL, which this device has turned off. The live map below shows the same data.</p>'; return; }
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
+  catch (e) { host.innerHTML = '<p class="scene-fallback">The 3D view needs WebGL, which is turned off on this device. The live map below shows the same data.</p>'; return; }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
   host.appendChild(renderer.domElement);
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0b0b0c, 26, 70);
-  const cam = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
-  cam.position.set(12, 15, 19);
-  const ctl = new OrbitControls(cam, renderer.domElement);
-  ctl.enableDamping = true; ctl.maxPolarAngle = 1.25; ctl.minDistance = 6; ctl.maxDistance = 45;
-  ctl.autoRotate = !RM; ctl.autoRotateSpeed = 0.35; ctl.enablePan = false;
-  ctl.addEventListener('start', () => ctl.autoRotate = false);
+  const labels = new CSS2DRenderer(); labels.domElement.className = 'scene-labels'; host.appendChild(labels.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x101014, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(6, 14, 8); scene.add(sun);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0b0c);
+  scene.fog = new THREE.FogExp2(0x0b0b0c, 0.028);
+  const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 300); cam.position.set(0, 21, 21);
+  const ctl = new OrbitControls(cam, labels.domElement);
+  ctl.enableDamping = true; ctl.minPolarAngle = 0.35; ctl.maxPolarAngle = 1.15; ctl.minDistance = 8; ctl.maxDistance = 42;
+  ctl.target.set(0, 0, 0); ctl.autoRotate = !RM; ctl.autoRotateSpeed = 0.25;
+  ctl.addEventListener('start', () => { ctl.autoRotate = false; });
 
-  // ground + street grid + Bay of Bengal (east of ~80.285E)
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshStandardMaterial({ color: 0x121214, roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(W * U, H * U), new THREE.MeshBasicMaterial({ map: groundTexture() }));
   ground.rotation.x = -Math.PI / 2; scene.add(ground);
-  const grid = new THREE.GridHelper(90, 90, 0x2a2a30, 0x1c1c20); grid.position.y = 0.01; scene.add(grid);
-  const seaX = (80.285 - C0.lng) * K;
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(30, 60), new THREE.MeshStandardMaterial({ color: 0x0a1a2a, roughness: 0.4, metalness: 0.2 }));
-  sea.rotation.x = -Math.PI / 2; sea.position.set(seaX + 15, 0.02, 0); scene.add(sea);
 
-  // procedural low-rise city blocks (west of the coast), instanced for speed
-  const rnd = seeded(600028), N = 900;
-  const blocks = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x1e1e23, roughness: 0.9 }), N);
-  const m4 = new THREE.Matrix4(); let n = 0;
-  for (let i = 0; i < N * 2 && n < N; i++) {
-    const x = (rnd() - 0.5) * 60, z = (rnd() - 0.5) * 60; if (x > seaX - 0.4) continue;
-    const h = 0.15 + Math.pow(rnd(), 3) * 1.6, w = 0.35 + rnd() * 0.5;
-    m4.compose(new THREE.Vector3(Math.round(x) + 0.5, h / 2, Math.round(z) + 0.5), new THREE.Quaternion(), new THREE.Vector3(w, h, w));
-    blocks.setMatrixAt(n++, m4);
-  }
-  blocks.count = n; scene.add(blocks);
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, cam));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.9, 0.55, 0.15); composer.addPass(bloom);
+  composer.addPass(new OutputPass());
 
   const dyn = new THREE.Group(); scene.add(dyn);
-  const pick = []; let movers = [], rings = [];
+  const hits = []; let anim = [];
   const tip = document.createElement('div'); tip.className = 'scene-tip'; host.appendChild(tip);
 
+  function label(text, cls, pos) { const d = document.createElement('div'); d.className = 'scene-lbl ' + cls; d.textContent = text; const o = new CSS2DObject(d); o.position.copy(pos); dyn.add(o); }
+
   function build() {
-    dyn.clear(); pick.length = 0; movers = []; rings = [];
+    dyn.traverse(o => { if (o.element) o.element.remove(); }); dyn.clear(); hits.length = 0; anim = [];
     const mem = S.mem() || [], teams = S.teams() || [];
     mem.forEach(i => {
       if (typeof i.lat !== 'number') return;
-      const p = P(i.lat, i.lng), done = i.status === 'Resolved', pr = S.prio(i);
-      const h = done ? 0.25 : 0.6 + pr / 22, col = done ? 0x55555c : SEVC[i.sev];
-      const mat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: done ? 0 : 0.55, transparent: done, opacity: done ? 0.5 : 1 });
-      const pil = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, h, 20), mat);
-      pil.position.set(p.x, h / 2, p.z); pil.userData = { kind: 'inc', i }; dyn.add(pil); pick.push(pil);
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), mat); cap.position.set(p.x, h, p.z); cap.userData = pil.userData; dyn.add(cap); pick.push(cap);
+      const done = i.status === 'Resolved', col = done ? 0x6b6d75 : SEVC[i.sev], h = done ? 0.4 : 0.8 + S.prio(i) / 14;
+      const base = P(i.lat, i.lng);
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.07, h, 12, 1, true),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: done ? 0.35 : 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
+      beam.position.set(base.x, h / 2, base.z); dyn.add(beam);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(done ? 0.08 : 0.13, 16, 12), new THREE.MeshBasicMaterial({ color: col }));
+      head.position.set(base.x, h, base.z); head.userData = { kind: 'inc', i }; dyn.add(head); hits.push(head);
+      const hitbox = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, h, 8), new THREE.MeshBasicMaterial({ visible: false }));
+      hitbox.position.copy(beam.position); hitbox.userData = head.userData; dyn.add(hitbox); hits.push(hitbox);
+      const pool = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow(col), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      pool.position.set(base.x, 0.05, base.z); pool.scale.setScalar(done ? 0.8 : 1.6); dyn.add(pool);
       if (!done && (i.sev === 'Critical' || i.sev === 'High')) {
-        const r = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.38, 40), new THREE.MeshBasicMaterial({ color: col, transparent: true, side: THREE.DoubleSide }));
-        r.rotation.x = -Math.PI / 2; r.position.set(p.x, 0.03, p.z); dyn.add(r); rings.push(r);
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.27, 48), new THREE.MeshBasicMaterial({ color: col, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+        ring.rotation.x = -Math.PI / 2; ring.position.set(base.x, 0.04, base.z); dyn.add(ring);
+        anim.push(t => { const k = (t * 0.6 + base.x) % 1; ring.scale.setScalar(1 + k * 4); ring.material.opacity = 1 - k; });
       }
+      if (!done && i.sev === 'Critical') label(i.id + ' · ' + i.title, 'crit', new THREE.Vector3(base.x, h + 0.45, base.z));
     });
     teams.forEach(t => {
-      const p = P(t.lat, t.lng), busy = t.status === 'Busy';
-      const col = busy ? 0x8b8d98 : 0x3e9bff;
-      const u = new THREE.Mesh(new THREE.OctahedronGeometry(0.28), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.6 }));
-      u.position.set(p.x, 0.55, p.z); u.userData = { kind: 'team', t }; dyn.add(u); pick.push(u);
+      const busy = t.status === 'Busy', col = busy ? 0x9aa0ab : 0x3e9bff, p = P(t.lat, t.lng);
+      const chip = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.06, 6), new THREE.MeshBasicMaterial({ color: col }));
+      chip.position.set(p.x, 0.06, p.z); chip.userData = { kind: 'team', t }; dyn.add(chip); hits.push(chip);
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow(col), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      halo.position.set(p.x, 0.08, p.z); halo.scale.setScalar(0.9); dyn.add(halo);
       const inc = mem.find(x => x.id === t.incident && x.team === t.id && x.status !== 'Resolved');
       if (busy && inc && typeof inc.lat === 'number') {
-        const a = P(t.lat, t.lng), b = P(inc.lat, inc.lng), mid = a.clone().lerp(b, 0.5); mid.y = 1.2 + a.distanceTo(b) * 0.35;
-        a.y = 0.55; b.y = 0.4;
+        const a = P(t.lat, t.lng, 0.1), b = P(inc.lat, inc.lng, 0.1), d = a.distanceTo(b);
+        const mid = a.clone().lerp(b, 0.5); mid.y = 0.6 + d * 0.45;
         const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-        dyn.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.035, 8), new THREE.MeshBasicMaterial({ color: 0x3e9bff, transparent: true, opacity: 0.85 })));
-        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        dyn.add(dot); movers.push({ dot, curve, o: Math.random() });
+        dyn.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.022, 6), new THREE.MeshBasicMaterial({ color: 0x5fb0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })));
+        const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        dyn.add(pulse); const off = Math.random();
+        anim.push(tt => pulse.position.copy(curve.getPoint((tt * 0.3 + off) % 1)));
+        label(t.name + ' → ' + inc.id, 'team', mid.clone().add(new THREE.Vector3(0, 0.25, 0)));
       }
     });
   }
-  build();
-  window.addEventListener('sosx:data', build);
+  build(); window.addEventListener('sosx:data', build);
+  // frame the camera on where the incidents actually are
+  (function frame() {
+    const pts = (S.mem() || []).filter(i => typeof i.lat === 'number').map(i => P(i.lat, i.lng));
+    if (!pts.length) return;
+    const c = pts.reduce((s, p) => s.add(p), new THREE.Vector3()).divideScalar(pts.length);
+    const r = Math.max(4, ...pts.map(p => p.distanceTo(c)));
+    ctl.target.copy(c); cam.position.set(c.x + r * 0.4, r * 1.9 + 3, c.z + r * 1.9 + 3); ctl.update();
+  })();
 
-  const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let hover = null;
-  renderer.domElement.addEventListener('pointermove', e => {
-    const r = renderer.domElement.getBoundingClientRect();
-    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-    ray.setFromCamera(mouse, cam); const hit = ray.intersectObjects(pick)[0];
-    hover = hit ? hit.object.userData : null;
-    renderer.domElement.style.cursor = hover ? 'pointer' : 'grab';
-    if (hover) {
-      tip.style.display = 'block'; tip.style.left = (e.clientX - r.left + 14) + 'px'; tip.style.top = (e.clientY - r.top + 10) + 'px';
-      tip.innerHTML = hover.kind === 'inc'
-        ? '<b>' + S.esc(hover.i.title) + '</b><span>' + hover.i.id + ' · ' + hover.i.sev + ' · priority ' + S.prio(hover.i) + '</span><span>' + S.esc(hover.i.status) + (hover.i.team ? ' · team ' + S.esc(hover.i.team) : '') + '</span>'
-        : '<b>' + S.esc(hover.t.name) + '</b><span>' + hover.t.id + ' · ' + hover.t.status + '</span>';
-    } else tip.style.display = 'none';
+  const ray = new THREE.Raycaster(), m = new THREE.Vector2(); let hover = null;
+  labels.domElement.addEventListener('pointermove', e => {
+    const r = host.getBoundingClientRect();
+    m.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(m, cam); const h = ray.intersectObjects(hits)[0]; hover = h ? h.object.userData : null;
+    labels.domElement.style.cursor = hover ? 'pointer' : 'grab';
+    if (!hover) { tip.style.display = 'none'; return; }
+    tip.style.display = 'block'; tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 250) + 'px'; tip.style.top = (e.clientY - r.top + 12) + 'px';
+    tip.innerHTML = hover.kind === 'inc'
+      ? `<b>${S.esc(hover.i.title)}</b><span>${hover.i.id} · ${hover.i.sev} · priority ${S.prio(hover.i)}</span><span>${S.esc(hover.i.loc)} · ${S.esc(hover.i.status)}</span>`
+      : `<b>${S.esc(hover.t.name)}</b><span>${hover.t.id} · ${hover.t.status}${hover.t.incident ? ' · on ' + S.esc(hover.t.incident) : ''}</span>`;
   });
-  renderer.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
-  renderer.domElement.addEventListener('click', () => { if (hover && hover.kind === 'inc') S.select(hover.i.id); });
+  labels.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+  labels.domElement.addEventListener('click', () => { if (hover && hover.kind === 'inc') S.select(hover.i.id); });
 
-  function size() { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  function size() {
+    const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); composer.setSize(w, h); labels.setSize(w, h); bloom.setSize(w, h);
+    cam.aspect = w / h; cam.updateProjectionMatrix();
+  }
   new ResizeObserver(size).observe(host); size();
-
   let vis = true; new IntersectionObserver(es => { vis = es[0].isIntersecting; }).observe(host);
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
     if (!vis || document.hidden) return;
-    const t = clock.getElapsedTime();
-    rings.forEach((r, k) => { const s = 1 + ((t * 0.8 + k * 0.3) % 1) * 2.2; r.scale.set(s, s, s); r.material.opacity = 1 - ((t * 0.8 + k * 0.3) % 1); });
-    movers.forEach(m => m.dot.position.copy(m.curve.getPoint(((t * 0.25) + m.o) % 1)));
-    ctl.update(); renderer.render(scene, cam);
+    const t = clock.getElapsedTime(); anim.forEach(f => f(t));
+    ctl.update(); composer.render(); labels.render(scene, cam);
   });
 }
 document.querySelectorAll('[data-scene3d]').forEach(mount);
