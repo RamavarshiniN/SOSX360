@@ -124,6 +124,10 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
 .scene-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
 .scene-hint{position:absolute;right:12px;top:12px;font:500 11px "JetBrains Mono";color:var(--mu)}
 .scene-fallback{padding:24px;color:var(--mu)}
+.hero-map{position:relative}.hero-map #hmap{height:520px}.hero-map .scene-hint{z-index:500;background:rgba(11,11,12,.75);padding:4px 8px;border-radius:4px}.hero-map .scene-legend{z-index:500}
+.leaflet-container{background:#0f1013;font-family:"IBM Plex Sans",sans-serif}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#18181B;color:#EDEDEF;border:1px solid #2E2E33}.leaflet-popup-content{font-size:13px;line-height:1.5}.leaflet-control-zoom a{background:#18181B!important;color:#EDEDEF!important;border-color:#2E2E33!important}.leaflet-control-attribution{background:rgba(11,11,12,.7)!important;color:#777!important}.leaflet-control-attribution a{color:#999!important}
+.vtoggle{display:inline-flex;border:1px solid var(--bd2);border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px}.vtoggle button{background:none;border:0;color:var(--mu);padding:8px 16px;min-height:40px;cursor:pointer;font-weight:600}.vtoggle button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var(--red)}
+
 .scene-labels{position:absolute!important;inset:0;pointer-events:auto}.scene-lbl{font:600 11px "JetBrains Mono";padding:3px 7px;border-radius:4px;white-space:nowrap;pointer-events:none}.scene-lbl.crit{background:rgba(229,72,77,.92);color:#fff}.scene-lbl.team{background:rgba(11,22,40,.85);color:#9cc9ff;border:1px solid #2a5fa8}.scene-hint,.scene-legend,.scene-tip{z-index:3}
 
 /* flow list instead of 3 identical cards */
@@ -178,14 +182,9 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
       <a class="track-link" data-nav="track">Already reported? Track it with your INC number</a>
       <div class="sos-strip">In immediate danger, call <a href="tel:112">112</a> first. Police 100 · Fire 101 · Ambulance 108. SOSX360 coordinates the response; it does not replace the call.</div>
     </div>
-    <div class="scene" data-scene3d aria-label="3D view of live incidents and response teams in Chennai">
-      <div class="scene-hint">Drag to orbit · scroll to zoom · click a pillar</div>
-      <div class="scene-legend"><span><i style="background:#E5484D"></i>Critical</span><span><i style="background:#F76B15"></i>High</span><span><i style="background:#F5D90A"></i>Medium</span><span><i style="background:#46A758"></i>Low</span><span><i style="background:#3E9BFF"></i>Team</span><span>height = priority</span></div>
-    </div>
+    <div class="hero-map"><div id="hmap" class="scene" aria-label="Live map of incidents and response teams"></div><div class="scene-legend"><span><i style="background:#E5484D"></i>Critical</span><span><i style="background:#F76B15"></i>High</span><span><i style="background:#F5D90A"></i>Medium</span><span><i style="background:#46A758"></i>Low</span><span><i style="background:#3E9BFF"></i>Team</span><span>line = dispatch route</span></div><div class="scene-hint" id="hmapcount"></div></div></div>
   </div>
   <div class="stats" id="hstats"></div>
-  <div class="sec-h"><h2>Live emergency map</h2><span id="hmapcount"></span></div>
-  <div id="hmap" style="height:420px;border-radius:14px;border:1px solid var(--bd)"></div>
   <div class="sec-h"><h2>From report to dispatch</h2><span>What happens after you press submit</span></div>
   <ol class="flow">
     <li><span class="n">01</span><b>You report</b><p>Voice or text, in your language. Location is pinned on the map.</p><span class="tm">~30 s</span></li>
@@ -204,7 +203,9 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
     <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill Low">Low</span><span class="pill Medium">Medium</span><span class="pill High">High</span><span class="pill Critical">Critical</span><span class="pill" style="background:var(--p2);color:var(--mu)">Faded = Resolved</span><span class="pill" style="background:#0B2A4A;color:#5BB5FF">Blue = available team · Grey = busy · Line = route</span></div>
   </div>
   <div id="mapmsg" class="err"></div>
+  <div class="vtoggle" role="tablist"><button class="on" data-v="2d" role="tab">Map</button><button data-v="3d" role="tab">3D view</button></div>
   <div id="map" style="height:64vh;min-height:380px;border-radius:14px;border:1px solid var(--bd)"></div>
+  <div id="map3d" class="scene hide" data-scene3d style="height:64vh;min-height:380px" aria-label="3D view of live incidents"><div class="scene-hint">Drag to orbit · scroll to zoom · click a beacon</div></div>
 </section>
 
 <section id="v-track" class="view"><div style="max-width:620px;margin:0 auto">
@@ -265,7 +266,6 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
   </div>
   <div class="sla" id="sla"></div>
   <div class="stats stats6" id="stats"></div>
-  <div class="scene" data-scene3d style="height:380px;margin-top:16px" aria-label="3D command view"><div class="scene-hint">3D command view · pillar height = priority · arcs = live dispatch</div><div class="scene-legend"><span><i style="background:#E5484D"></i>Critical</span><span><i style="background:#F76B15"></i>High</span><span><i style="background:#F5D90A"></i>Medium</span><span><i style="background:#46A758"></i>Low</span><span><i style="background:#3E9BFF"></i>Available team</span><span><i style="background:#8B8D98"></i>Busy team</span></div></div>
   <div class="dg" style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-top:16px">
     <div style="display:flex;flex-direction:column;gap:16px"><div class="card"><h3 style="margin-bottom:16px">Incidents by category</h3><div id="bycat"></div></div><div class="card"><h3 style="margin-bottom:12px">Response performance</h3><div id="perf"></div></div></div>
     <div class="card"><h3 style="margin-bottom:4px">Priority queue</h3><div style="color:var(--mu);font-size:13px;margin-bottom:14px">Ranked by severity, people affected, waiting time and category</div><div id="urgent"></div></div>
@@ -653,9 +653,10 @@ function geoFill(){
 function mapView(){
   if(typeof L==='undefined'){$('mapmsg').textContent='The map library could not load. Check your internet connection and reload.';return}
   $('mapmsg').textContent='';
-  if(!map){map=L.map('map').setView([13.0827,80.2707],11);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);layer=L.layerGroup().addTo(map)}
+  if(!map){map=L.map('map').setView([13.0827,80.2707],11);var __M=map;L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Tiles © Esri'}).addTo(__M);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:16}).addTo(map);layer=L.layerGroup().addTo(map)}
   setTimeout(function(){map.invalidateSize();plot()},60);geoFill();
 }
+document.addEventListener('click',function(e){var b=e.target.closest('.vtoggle button');if(!b)return;document.querySelectorAll('.vtoggle button').forEach(function(x){x.classList.toggle('on',x===b)});var d3=b.dataset.v==='3d';$('map').classList.toggle('hide',d3);$('map3d').classList.toggle('hide',!d3);if(!d3&&map)setTimeout(function(){map.invalidateSize()},50)});
 function plot(){if(map)plotOn(map,layer,'mapcount');if(hmap)plotOn(hmap,hlayer,'hmapcount');live();try{window.dispatchEvent(new Event('sosx:data'))}catch(e){}}
 function toast(msg,kind){var d=document.createElement('div');d.className='toast '+(kind||'');d.textContent=msg;$('toasts').appendChild(d);setTimeout(function(){d.remove()},5200)}
 function live(){var o=mem.filter(function(i){return i.status!=='Resolved'}).length,c=mem.filter(function(i){return i.sev==='Critical'&&i.status!=='Resolved'}).length;if($('hlive'))$('hlive').textContent='Live · Chennai · '+o+' open · '+c+' critical';autoDispatch();sla()}
@@ -676,7 +677,7 @@ window.SOSX={mem:function(){return mem},teams:function(){return TEAMS},prio:prio
 var hmap,hlayer;
 function homeMap(){
   if(typeof L==='undefined')return;
-  if(!hmap){hmap=L.map('hmap',{scrollWheelZoom:false}).setView([13.0827,80.2707],11);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(hmap);hlayer=L.layerGroup().addTo(hmap)}
+  if(!hmap){hmap=L.map('hmap',{scrollWheelZoom:false}).setView([13.0827,80.2707],11);var __M=hmap;L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Tiles © Esri'}).addTo(__M);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:16}).addTo(hmap);hlayer=L.layerGroup().addTo(hmap)}
   setTimeout(function(){hmap.invalidateSize();plot()},60);geoFill();
 }
 function plotOn(map,layer,cid){
