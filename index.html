@@ -182,9 +182,11 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
       <a class="track-link" data-nav="track">Already reported? Track it with your INC number</a>
       <div class="sos-strip">In immediate danger, call <a href="tel:112">112</a> first. Police 100 · Fire 101 · Ambulance 108. SOSX360 coordinates the response; it does not replace the call.</div>
     </div>
-    <div class="hero-map"><div id="hmap" class="scene" aria-label="Live map of incidents and response teams"></div><div class="scene-legend"><span><i style="background:#E5484D"></i>Critical</span><span><i style="background:#F76B15"></i>High</span><span><i style="background:#F5D90A"></i>Medium</span><span><i style="background:#46A758"></i>Low</span><span><i style="background:#3E9BFF"></i>Team</span><span>line = dispatch route</span></div><div class="scene-hint" id="hmapcount"></div></div></div>
+    <div class="scene" data-scene3d style="height:520px" aria-label="3D map of live incidents and response teams in Chennai"><div class="scene-hint">Drag to orbit · scroll to zoom · click a beacon</div><div class="scene-legend"><span><i style="background:#E5484D"></i>Critical</span><span><i style="background:#F76B15"></i>High</span><span><i style="background:#F5D90A"></i>Medium</span><span><i style="background:#46A758"></i>Low</span><span><i style="background:#3E9BFF"></i>Team</span><span>height = priority</span></div></div></div>
   </div>
   <div class="stats" id="hstats"></div>
+  <div class="sec-h"><h2>Live emergency map</h2><span id="hmapcount"></span></div>
+  <div id="hmap" style="height:440px;border-radius:14px;border:1px solid var(--bd)"></div>
   <div class="sec-h"><h2>From report to dispatch</h2><span>What happens after you press submit</span></div>
   <ol class="flow">
     <li><span class="n">01</span><b>You report</b><p>Voice or text, in your language. Location is pinned on the map.</p><span class="tm">~30 s</span></li>
@@ -266,6 +268,7 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
   </div>
   <div class="sla" id="sla"></div>
   <div class="stats stats6" id="stats"></div>
+  <div class="scene" data-scene3d style="height:440px;margin-top:16px" aria-label="3D command view"><div class="scene-hint">3D command view · click a beacon to manage it</div><div class="scene-legend"><span><i style="background:#E5484D"></i>Critical</span><span><i style="background:#F76B15"></i>High</span><span><i style="background:#F5D90A"></i>Medium</span><span><i style="background:#46A758"></i>Low</span><span><i style="background:#3E9BFF"></i>Team</span><span><i style="background:#9AA0AB"></i>Busy team</span><span>arcs = live dispatch</span></div></div>
   <div class="dg" style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-top:16px">
     <div style="display:flex;flex-direction:column;gap:16px"><div class="card"><h3 style="margin-bottom:16px">Incidents by category</h3><div id="bycat"></div></div><div class="card"><h3 style="margin-bottom:12px">Response performance</h3><div id="perf"></div></div></div>
     <div class="card"><h3 style="margin-bottom:4px">Priority queue</h3><div style="color:var(--mu);font-size:13px;margin-bottom:14px">Ranked by severity, people affected, waiting time and category</div><div id="urgent"></div></div>
@@ -821,7 +824,7 @@ $('mic').addEventListener('click',function(){
   $('micst').textContent='Listening…';$('mic').classList.add('on');
   rec.onresult=function(e){useTranscript(e.results[0][0].transcript)};
   rec.onerror=function(e){
-    if(e.error==='network'||e.error==='service-not-allowed'||e.error==='language-not-supported'){window.__srBroken=true;rec=null;$('mic').classList.remove('on');whisper();return}
+    if(['network','service-not-allowed','language-not-supported','aborted','audio-capture'].indexOf(e.error)>-1){window.__srBroken=true;rec=null;$('mic').classList.remove('on');whisper();return}
     $('micst').textContent=e.error==='no-speech'?'No speech heard. Tap Speak and talk.':e.error==='not-allowed'?'Microphone permission denied.':'Voice error: '+e.error};
   rec.onend=function(){rec=null;if(!mrec)$('mic').classList.remove('on');if($('micst').textContent.indexOf('Listening')===0)$('micst').textContent=''};
   rec.start();
