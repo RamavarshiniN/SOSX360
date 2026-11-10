@@ -1,4 +1,4 @@
-const CACHE_VERSION = "sosx360-static-v1";
+const CACHE_VERSION = "sosx360-static-v3";
 const APP_SHELL = ["/", "/index.html", "/offline.html"];
 
 self.addEventListener("install", (event) => {
