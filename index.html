@@ -243,7 +243,7 @@ nav button.on{background:var(--p2);color:var(--tx);box-shadow:inset 0 -2px 0 var
         <button type="button" class="btn ghost" id="mic" style="margin-top:8px;padding:8px 14px"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>Speak</button><span id="micst" style="margin-left:10px;color:var(--mu);font-size:13px"></span>
         <div class="err" id="e-desc"></div>
         <div class="two">
-          <div><label class="lbl" for="loc">Location</label><input id="loc" class="in" maxlength="120" placeholder="Street, area, city"><div class="err" id="e-loc"></div></div>
+          <div><label class="lbl" for="loc">Location</label><input id="loc" class="in" maxlength="120" placeholder="Street, area, city"><button type="button" class="btn ghost" id="gps" style="margin-top:8px;padding:6px 12px;min-height:36px;font-size:13px"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>Use my location</button><div class="err" id="e-loc"></div></div>
           <div><label class="lbl" for="ppl">People affected</label><input id="ppl" class="in" type="number" min="0" max="100000" value="1"><div class="err" id="e-ppl"></div></div>
         </div>
         <label class="lbl" for="contact">Contact (optional)</label>
@@ -456,7 +456,7 @@ var D={};
 ['Responders only. Enter the admin password.','மீட்புப் பணியாளர்களுக்கு மட்டும். நிர்வாகி கடவுச்சொல்லை உள்ளிடவும்.','केवल रेस्पॉन्डर के लिए। एडमिन पासवर्ड डालें।'],['Password','கடவுச்சொல்','पासवर्ड'],['Log in','உள்நுழை','लॉग इन'],['Cancel','ரத்து','रद्द करें'],['Incorrect passcode.','தவறான கடவுச்சொல்.','गलत पासवर्ड।'],
 ['Enter the reference number you received after submitting, for example INC-1234.','சமர்ப்பித்த பின் கிடைத்த குறிப்பு எண்ணை உள்ளிடவும், எ.கா. INC-1234.','जमा करने के बाद मिला संदर्भ नंबर डालें, जैसे INC-1234।'],['Reference number','குறிப்பு எண்','संदर्भ नंबर'],['Check status','நிலையைச் சரிபார்','स्थिति जाँचें'],['No report found with that number.','அந்த எண்ணில் புகார் இல்லை.','इस नंबर की कोई रिपोर्ट नहीं मिली।'],
 ['Live Incident Map','நேரலை சம்பவ வரைபடம்','लाइव घटना मैप'],['Faded = Resolved','மங்கல் = தீர்ந்தது','फीका = सुलझा'],
-['Teams','குழுக்கள்','टीमें'],['Response Teams','மீட்புக் குழுக்கள்','रिस्पॉन्स टीमें'],['Priority queue','முன்னுரிமை வரிசை','प्राथमिकता सूची'],['Assigned','ஒதுக்கப்பட்டது','सौंपा गया'],['Available teams','கிடைக்கும் குழுக்கள்','उपलब्ध टीमें'],['Busy teams','பணியில் உள்ள குழுக்கள்','व्यस्त टीमें'],['Total incidents','மொத்த சம்பவங்கள்','कुल घटनाएँ'],['Response team','மீட்புக் குழு','रिस्पॉन्स टीम'],['Add a team','குழுவைச் சேர்','टीम जोड़ें'],['Team name','குழு பெயர்','टीम का नाम'],['Response category','குழு வகை','टीम श्रेणी'],['Current location','தற்போதைய இடம்','वर्तमान स्थान'],['Add team','குழுவைச் சேர்','टीम जोड़ें'],['Release team','குழுவை விடுவி','टीम मुक्त करें'],['Show route','வழியைக் காட்டு','रास्ता दिखाएँ'],['Assign','ஒதுக்கு','सौंपें'],['Response performance','செயல்திறன்','प्रतिक्रिया प्रदर्शन'],['Report an emergency in 30 seconds.','30 விநாடிகளில் அவசரநிலையைப் புகாரளியுங்கள்.','30 सेकंड में आपात स्थिति की रिपोर्ट करें।'],['We route the nearest team.','அருகிலுள்ள குழுவை அனுப்புகிறோம்.','हम सबसे नज़दीकी टीम भेजते हैं।'],['From report to dispatch','புகார் முதல் அனுப்புதல் வரை','रिपोर्ट से रवानगी तक'],['Auto-dispatch','தானியங்கி அனுப்புதல்','ऑटो-डिस्पैच'],['Call 112','112 ஐ அழைக்கவும்','112 पर कॉल करें'],['affected','பாதிப்பு','प्रभावित'],['mentioned','குறிப்பிடப்பட்டது','उल्लेख'],['min ago','நிமிடம் முன்','मिनट पहले'],['h ago','மணி முன்','घंटे पहले'],['d ago','நாள் முன்','दिन पहले']
+['Teams','குழுக்கள்','टीमें'],['Response Teams','மீட்புக் குழுக்கள்','रिस्पॉन्स टीमें'],['Priority queue','முன்னுரிமை வரிசை','प्राथमिकता सूची'],['Assigned','ஒதுக்கப்பட்டது','सौंपा गया'],['Available teams','கிடைக்கும் குழுக்கள்','उपलब्ध टीमें'],['Busy teams','பணியில் உள்ள குழுக்கள்','व्यस्त टीमें'],['Total incidents','மொத்த சம்பவங்கள்','कुल घटनाएँ'],['Response team','மீட்புக் குழு','रिस्पॉन्स टीम'],['Add a team','குழுவைச் சேர்','टीम जोड़ें'],['Team name','குழு பெயர்','टीम का नाम'],['Response category','குழு வகை','टीम श्रेणी'],['Current location','தற்போதைய இடம்','वर्तमान स्थान'],['Add team','குழுவைச் சேர்','टीम जोड़ें'],['Release team','குழுவை விடுவி','टीम मुक्त करें'],['Show route','வழியைக் காட்டு','रास्ता दिखाएँ'],['Assign','ஒதுக்கு','सौंपें'],['Response performance','செயல்திறன்','प्रतिक्रिया प्रदर्शन'],['Report an emergency in 30 seconds.','30 விநாடிகளில் அவசரநிலையைப் புகாரளியுங்கள்.','30 सेकंड में आपात स्थिति की रिपोर्ट करें।'],['We route the nearest team.','அருகிலுள்ள குழுவை அனுப்புகிறோம்.','हम सबसे नज़दीकी टीम भेजते हैं।'],['From report to dispatch','புகார் முதல் அனுப்புதல் வரை','रिपोर्ट से रवानगी तक'],['Auto-dispatch','தானியங்கி அனுப்புதல்','ऑटो-डिस्पैच'],['Call 112','112 ஐ அழைக்கவும்','112 पर कॉल करें'],['Use my location','என் இருப்பிடத்தைப் பயன்படுத்து','मेरी लोकेशन इस्तेमाल करें'],['affected','பாதிப்பு','प्रभावित'],['mentioned','குறிப்பிடப்பட்டது','उल्लेख'],['min ago','நிமிடம் முன்','मिनट पहले'],['h ago','மணி முன்','घंटे पहले'],['d ago','நாள் முன்','दिन पहले']
 ].forEach(function(r){D[r[0]]=[r[1],r[2]]});
 function T(s){
   if(lang==='en'||typeof s!=='string')return s;
@@ -586,11 +586,23 @@ $('form').addEventListener('submit',function(e){
   if(!ok)return;
   var inc=mk($('title').value.trim(),cat,$('desc').value.trim(),$('loc').value.trim(),+p,$('contact').value.trim(),Date.now(),'Reported');
   /* geocode first so the report reaches the server (and every other screen) with its map position */
+  if(GPS){inc.lat=GPS.lat;inc.lng=GPS.lng;GPS=null}
   mem.unshift(inc);save();rerender();
-  Promise.race([geocode(inc),new Promise(function(r){setTimeout(r,5000)})]).then(function(){q('POST','/incidents',inc);rerender()});
+  Promise.race([typeof inc.lat==='number'?Promise.resolve():geocode(inc),new Promise(function(r){setTimeout(r,5000)})]).then(function(){q('POST','/incidents',inc);rerender()});
   $('d-id').textContent=inc.id;$('d-sev').className='pill '+inc.sev;$('d-sev').textContent=inc.sev.toUpperCase();
   toast('Report '+inc.id+' received · '+inc.sev,'ok');$('form').classList.add('hide');$('done').classList.remove('hide');last=inc;if(voiceUsed){say(SPK[lang](inc.id,inc.sev));voiceUsed=false}
 });
+var GPS=null;
+$('gps').addEventListener('click',function(){
+  if(!navigator.geolocation){$('e-loc').textContent='Location is not available on this device.';return}
+  $('e-loc').textContent='Finding your location…';
+  navigator.geolocation.getCurrentPosition(function(p){
+    GPS={lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6)};
+    $('loc').value=GPS.lat.toFixed(5)+', '+GPS.lng.toFixed(5);$('e-loc').textContent='';
+    fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=16&lat='+GPS.lat+'&lon='+GPS.lng).then(function(r){return r.json()}).then(function(a){if(a&&a.display_name)$('loc').value=a.display_name.split(',').slice(0,3).join(',').trim()}).catch(function(){});
+  },function(e){GPS=null;$('e-loc').textContent=e.code===1?'Location permission denied. Type the place instead.':'Could not get your location. Type the place instead.'},{enableHighAccuracy:true,timeout:10000});
+});
+$('loc').addEventListener('input',function(){GPS=null});
 $('again').addEventListener('click',function(){
   $('form').reset();$('ppl').value=1;cat='';$('cats').querySelectorAll('button').forEach(function(b){b.classList.remove('on')});
   $('done').classList.add('hide');$('form').classList.remove('hide');preview();
