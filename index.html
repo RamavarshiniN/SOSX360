@@ -4,6 +4,688 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SOSX360 – Emergency Response Platform</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0A0B">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#0A0A0B;--p:#141416;--p2:#1B1B1F;--bd:#2A2A2F;--tx:#F4F4F5;--mu:#A1A1AA;--red:#E11D2E;--rl:#FF4D5A;--grn:#6EE79A;--yel:#FFD04D;--org:#FF9A4D;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 15px/1.5 Inter,system-ui,sans-serif}
+h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 32px;border-bottom:1px solid var(--bd);background:#0F0F11;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.logo{font:700 20px "Space Grotesk";display:flex;align-items:center;gap:10px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--red);box-shadow:0 0 0 5px #E11D2E33;animation:pl 1.6s infinite}
+@keyframes pl{50%{box-shadow:0 0 0 9px #E11D2E00}}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{background:none;border:0;padding:10px 16px;border-radius:10px;color:var(--mu);cursor:pointer;min-height:44px;font-weight:600}
+nav button.on{background:#2A0E12;color:#fff}
+main{max-width:1180px;margin:0 auto;padding:32px}
+.view{display:none}.view.on{display:block}
+.card{background:var(--p);border:1px solid var(--bd);border-radius:14px;padding:22px}
+.btn{background:var(--red);color:#fff;border:0;border-radius:10px;padding:12px 20px;font-weight:600;min-height:44px;cursor:pointer}
+.btn:hover{background:#C4141F}.ghost{background:none;border:1px solid #3A3A40;color:var(--tx)}.ghost:hover{background:var(--p2)}
+.lbl{font:600 12px Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.in{width:100%;background:var(--bg);border:1px solid #33333A;border-radius:10px;padding:11px 14px;min-height:44px;margin-top:8px}
+.in:focus,button:focus-visible{outline:2px solid var(--rl);outline-offset:2px}
+.err{color:var(--rl);font-size:13px;min-height:18px;margin-top:4px}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font:600 12px Inter;white-space:nowrap}
+.Low{background:#14301D;color:var(--grn)}.Medium{background:#3A2F0B;color:var(--yel)}.High{background:#3D1F08;color:var(--org)}.Critical{background:var(--red);color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1.15fr;gap:40px}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.cats button{background:var(--bg);border:1px solid #33333A;border-radius:10px;padding:12px 8px;min-height:48px;cursor:pointer;font-weight:500}
+.cats button.on{background:#2A0E12;border-color:var(--red);color:#fff;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat b{display:block;font:700 40px "Space Grotesk";margin-top:6px}
+.bar{height:8px;border-radius:4px;background:var(--bd);margin:6px 0 12px}.bar i{display:block;height:8px;border-radius:4px;background:var(--red)}
+.inc{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:16px;border:1px solid var(--bd);border-radius:12px;background:var(--p);cursor:pointer;text-align:left;width:100%;margin-bottom:10px}
+.inc:hover{border-color:#44444B}
+.inc.crit{background:#2A0E12;border-color:var(--red)}
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}.filters select{width:auto;min-width:150px;margin:0}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
+.seg button{padding:12px 6px;border-radius:10px;border:1px solid #33333A;background:var(--bg);cursor:pointer;font-weight:600;min-height:44px}
+.seg button.on{background:var(--red);border-color:var(--red);color:#fff}
+dialog{background:var(--p);color:var(--tx);border:1px solid var(--bd);border-radius:16px;padding:28px;max-width:560px;width:calc(100% - 32px)}
+dialog::backdrop{background:#000A}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.meter{display:flex;gap:6px;margin-top:14px}.meter i{flex:1;height:8px;border-radius:4px;background:var(--bd)}
+.hide{display:none!important}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tiles .card b{font-family:"Space Grotesk";font-size:18px}
+.st{display:inline-block;padding:3px 10px;border-radius:99px;font:600 12px Inter;margin-top:6px}
+.st-Reported{background:#2A2A2F;color:#D4D4D8}.st-Pending{background:#3A2F0B;color:var(--yel)}.st-In{background:#0B2A4A;color:#5BB5FF}.st-Resolved{background:#14301D;color:var(--grn)}.st-Assigned{background:#2A1A4A;color:#B79BFF}
+.prio{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;border-radius:10px;background:var(--p2);border:1px solid var(--bd);font:700 14px 'Space Grotesk';margin-right:12px;flex:none}.crit .prio{background:var(--red);border-color:var(--red)}
+.tm{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:16px;border:1px solid var(--bd);border-radius:12px;background:var(--p);margin-bottom:10px;align-items:center}
+.tmi{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#1E6BFF;border:2px solid #fff;font-size:14px;box-shadow:0 2px 6px #0008}.tmi.busy{background:#7A7A85}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:14px}.kv span{color:var(--mu)}
+.stats6{grid-template-columns:repeat(6,1fr)}.stats6 .stat b{font-size:32px}
+.donut{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+#map,#hmap{position:relative;z-index:0}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}#lang{background:var(--bg);border:1px solid #3A3A40;border-radius:10px;padding:8px 10px;min-height:44px;color:var(--tx)}#mic.on{background:var(--red);border-color:var(--red)}
+footer{border-top:1px solid var(--bd);padding:28px 32px;text-align:center;color:var(--mu);font-size:14px}
+@media(max-width:860px){main{padding:20px 16px}header{padding:12px 16px}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.dg,.tiles{grid-template-columns:1fr!important}.seg{grid-template-columns:repeat(3,1fr)}.stats6{grid-template-columns:1fr 1fr!important}}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot"></span>SOSX360</div>
+  <nav aria-label="Main">
+    <button data-nav="home">Home</button>
+    <button data-nav="report">Report</button>
+    <button data-nav="track">Track</button>
+    <button data-nav="map">Live Map</button>
+    <button data-nav="dashboard" class="adm hide">Dashboard</button>
+    <button data-nav="incidents" class="adm hide">Incidents</button>
+    <button data-nav="teams" class="adm hide">Teams</button>
+    <button id="login" style="border:1px solid #3A3A40">Admin login</button>
+  </nav>
+  <div class="tools"><select id="lang" aria-label="Language"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select><span id="net" class="pill Low">Online</span><span id="obq" class="pill Medium hide"></span></div>
+</header>
+<main>
+
+<section id="v-home" class="view">
+  <div style="text-align:center;padding:32px 0 44px;max-width:820px;margin:0 auto">
+    <span class="pill Critical">24/7 EMERGENCY COORDINATION</span>
+    <h1 style="font-size:clamp(40px,7vw,72px);line-height:1.02;margin:20px 0">One report. <span style="color:var(--rl)">Faster response.</span></h1>
+    <p style="color:var(--mu);font-size:18px;margin:0 auto 28px;max-width:600px">SOSX360 collects emergency reports, rates their severity automatically and gives responders one live view of every incident.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><button class="btn" data-nav="report" style="padding:16px 28px;font-size:16px">Report an emergency</button><button class="btn ghost" data-nav="track" style="padding:16px 28px;font-size:16px">Track a report</button><button class="btn ghost" id="voicego" style="padding:16px 28px;font-size:16px">🎤 Report by voice</button></div>
+  </div>
+  <div class="card" style="border-color:#E11D2E66;background:#1E0A0D;margin-bottom:24px"><b>In immediate danger? Call 112 now.</b> <span style="color:var(--mu)">Police 100 · Fire 101 · Ambulance 102 / 108. This platform helps coordinate response and does not replace emergency calls.</span></div>
+  <div class="stats" id="hstats"></div>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin:40px 0 12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:28px">Live emergency map</h2><span id="hmapcount" style="color:var(--mu)"></span></div>
+  <div id="hmap" style="height:420px;border-radius:14px;border:1px solid var(--bd)"></div>
+  <h2 style="font-size:28px;margin:48px 0 16px">How it works</h2>
+  <div class="tiles">
+    <div class="card"><div class="lbl">Step 1</div><b>Report</b><p style="color:var(--mu);margin:8px 0 0">Describe what is happening, where, and how many people are affected.</p></div>
+    <div class="card"><div class="lbl">Step 2</div><b>Auto-classify</b><p style="color:var(--mu);margin:8px 0 0">Category, people affected and danger signals set a severity from Low to Critical.</p></div>
+    <div class="card"><div class="lbl">Step 3</div><b>Respond</b><p style="color:var(--mu);margin:8px 0 0">Responders prioritise the dashboard and update status until it is resolved.</p></div>
+  </div>
+  <h2 style="font-size:28px;margin:48px 0 16px">What you can report</h2>
+  <div class="tiles" id="hcats"></div>
+</section>
+
+<section id="v-map" class="view">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div><h1 style="font-size:34px">Live Incident Map</h1><div id="mapcount" style="color:var(--mu)"></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill Low">Low</span><span class="pill Medium">Medium</span><span class="pill High">High</span><span class="pill Critical">Critical</span><span class="pill" style="background:var(--p2);color:var(--mu)">Faded = Resolved</span><span class="pill" style="background:#0B2A4A;color:#5BB5FF">Blue = available team · Grey = busy · Line = route</span></div>
+  </div>
+  <div id="mapmsg" class="err"></div>
+  <div id="map" style="height:64vh;min-height:380px;border-radius:14px;border:1px solid var(--bd)"></div>
+</section>
+
+<section id="v-track" class="view"><div style="max-width:620px;margin:0 auto">
+  <h1 style="font-size:34px;margin-bottom:8px">Track a report</h1>
+  <p style="color:var(--mu);margin:0 0 20px">Enter the reference number you received after submitting, for example INC-1234.</p>
+  <form id="tform" class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end"><label class="lbl" for="tid" style="width:100%">Reference number</label><input id="tid" class="in" style="flex:1;margin:0;min-width:200px" placeholder="INC-1234"><button class="btn">Check status</button></form>
+  <div id="tres" style="margin-top:16px"></div>
+</div></section>
+
+<section id="v-report" class="view">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <h1 style="font-size:clamp(38px,6vw,60px);line-height:1.03">Every second counts. <span style="color:var(--rl)">Report it.</span></h1>
+      <p style="margin:0;color:var(--mu);font-size:17px;max-width:460px">Submit an emergency and it is classified by severity instantly, then appears on the response team’s dashboard.</p>
+      <div class="card" style="border-color:#E11D2E66;background:linear-gradient(160deg,#1E0A0D,#141416)">
+        <div class="lbl">Live severity preview</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap"><span id="pv" class="pill Low" style="font-size:15px;padding:7px 16px">LOW</span><span id="pvwhy" style="color:var(--mu);font-size:14px">Fill the form to see the rating</span></div>
+        <div class="meter" id="meter"><i></i><i></i><i></i><i></i></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--mu)"><span>Low</span><span>Medium</span><span>High</span><span>Critical</span></div>
+      </div>
+    </div>
+    <div>
+      <form id="form" class="card" style="padding:28px" novalidate>
+        <h2 style="font-size:26px;margin-bottom:18px">Report an emergency</h2>
+        <div class="lbl" id="catlbl">Category</div>
+        <div class="cats" id="cats" role="group" aria-labelledby="catlbl"></div>
+        <div class="err" id="e-cat"></div>
+        <label class="lbl" for="title">Incident title</label>
+        <input id="title" class="in" maxlength="90" placeholder="e.g. Warehouse fire near Anna Salai">
+        <div class="err" id="e-title"></div>
+        <label class="lbl" for="desc">Description</label>
+        <textarea id="desc" class="in" rows="3" maxlength="600" placeholder="What is happening? Mention anyone trapped, injured, or spreading danger."></textarea>
+        <button type="button" class="btn ghost" id="mic" style="margin-top:8px;padding:8px 14px">🎤 Speak</button><span id="micst" style="margin-left:10px;color:var(--mu);font-size:13px"></span>
+        <div class="err" id="e-desc"></div>
+        <div class="two">
+          <div><label class="lbl" for="loc">Location</label><input id="loc" class="in" maxlength="120" placeholder="Street, area, city"><div class="err" id="e-loc"></div></div>
+          <div><label class="lbl" for="ppl">People affected</label><input id="ppl" class="in" type="number" min="0" max="100000" value="1"><div class="err" id="e-ppl"></div></div>
+        </div>
+        <label class="lbl" for="contact">Contact (optional)</label>
+        <input id="contact" class="in" maxlength="80" placeholder="Phone or email">
+        <button class="btn" style="width:100%;margin-top:22px;padding:15px;font-size:16px">Submit emergency report</button>
+      </form>
+      <div id="done" class="card hide" style="padding:32px;text-align:center">
+        <h2 style="font-size:26px">Report received</h2>
+        <p style="color:var(--mu)">Reference <b id="d-id" style="color:var(--tx)"></b></p>
+        <span id="d-sev" class="pill" style="font-size:15px;padding:7px 16px"></span>
+        <p style="color:var(--mu);margin:16px 0 24px">Responders can now see this incident on the dashboard.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><button class="btn" id="again">Report another</button><button class="btn ghost" id="speak">🔊 Read aloud</button><button class="btn ghost" data-nav="dashboard">Open dashboard</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="v-dashboard" class="view">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+    <div><h1 style="font-size:34px">Command Dashboard</h1><div style="color:var(--mu)">Live overview of reported emergencies</div></div>
+    <button class="btn" data-nav="report">+ New incident</button>
+  </div>
+  <div class="stats stats6" id="stats"></div>
+  <div class="dg" style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-top:16px">
+    <div style="display:flex;flex-direction:column;gap:16px"><div class="card"><h3 style="margin-bottom:16px">Incidents by category</h3><div id="bycat"></div></div><div class="card"><h3 style="margin-bottom:12px">Response performance</h3><div id="perf"></div></div></div>
+    <div class="card"><h3 style="margin-bottom:4px">Priority queue</h3><div style="color:var(--mu);font-size:13px;margin-bottom:14px">Ranked by severity, people affected, waiting time and category</div><div id="urgent"></div></div>
+  </div>
+</section>
+
+<section id="v-incidents" class="view">
+  <h1 style="font-size:34px;margin-bottom:20px">Incident Management</h1>
+  <div class="filters">
+    <select id="f-st" class="in" aria-label="Filter by status"><option value="">All statuses</option></select>
+    <select id="f-sv" class="in" aria-label="Filter by severity"><option value="">All severities</option></select>
+    <select id="f-ct" class="in" aria-label="Filter by category"><option value="">All categories</option></select>
+    <button class="btn ghost" id="reset" title="Restore sample data">Reset demo data</button>
+  </div>
+  <div id="list"></div>
+</section>
+
+<section id="v-teams" class="view">
+  <div style="margin-bottom:20px"><h1 style="font-size:34px">Response Teams</h1><div style="color:var(--mu)" id="tmsum"></div></div>
+  <div class="dg" style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;align-items:start">
+    <form id="tmform" class="card" novalidate>
+      <h3 style="margin-bottom:12px">Add a team</h3>
+      <label class="lbl" for="tmname">Team name</label><input id="tmname" class="in" maxlength="60" placeholder="e.g. Fire Unit Anna Nagar"><div class="err" id="e-tmname"></div>
+      <label class="lbl" for="tmcat">Response category</label><select id="tmcat" class="in"></select>
+      <label class="lbl" for="tmloc" style="display:block;margin-top:14px">Current location</label><input id="tmloc" class="in" maxlength="120" placeholder="Area, city"><div class="err" id="e-tmloc"></div>
+      <button class="btn" style="width:100%;margin-top:12px">Add team</button>
+    </form>
+    <div id="tmlist"></div>
+  </div>
+</section>
+
+</main>
+<footer>SOSX360 · Emergency Response &amp; Disaster Management Platform · In danger? Call 112</footer>
+
+<dialog id="dlg" aria-labelledby="dt">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap" id="dbadges"></div>
+  <h2 id="dt" style="font-size:26px"></h2>
+  <div id="dmeta" style="color:var(--mu);margin:6px 0 16px;font-size:14px"></div>
+  <p id="ddesc" style="margin:0 0 16px;line-height:1.6"></p>
+  <div class="two" style="margin-bottom:16px"><div><div class="lbl">People affected</div><div id="dppl" style="font:700 30px 'Space Grotesk';color:var(--rl)"></div></div><div><div class="lbl">Contact</div><div id="dcon" style="margin-top:6px"></div></div></div>
+  <div class="lbl">Update status</div>
+  <div class="seg" id="seg"></div>
+  <div class="lbl" style="margin-top:22px">Response team</div>
+  <div id="dteam" style="margin-top:10px"></div>
+  <div style="display:flex;justify-content:space-between;gap:12px;margin-top:24px;flex-wrap:wrap">
+    <button class="btn ghost" id="del" style="color:var(--rl);border-color:#5A1A20">Delete report</button>
+    <button class="btn ghost" id="close">Close</button>
+  </div>
+</dialog>
+
+<dialog id="ldlg" aria-labelledby="lt"><h2 id="lt" style="font-size:24px">Admin login</h2><p style="color:var(--mu)">Responders only. Enter the admin password.</p>
+<form id="lform" novalidate><label class="lbl" for="pass">Password</label><input id="pass" type="password" class="in"><div class="err" id="e-pass"></div><div style="display:flex;gap:12px;margin-top:16px;justify-content:flex-end"><button type="button" class="btn ghost" id="lcancel">Cancel</button><button class="btn">Log in</button></div></form></dialog>
+
+<script>
+(function(){
+var CATS={fire:'Fire Emergency',road:'Road Accident',medical:'Medical Emergency',flood:'Flood',collapse:'Building Collapse',other:'Other Emergencies'};
+var BASE={fire:3,collapse:3,medical:2,road:2,flood:2,other:1};
+var SEV=['Low','Medium','High','Critical'],STAT=['Reported','Pending','Assigned','In Progress','Resolved'];
+var TCATS={fire:'Fire',medical:'Medical',rescue:'Rescue',police:'Police',flood:'Flood Response'},TICO={fire:'🚒',medical:'🚑',rescue:'⛑️',police:'🚓',flood:'🚤'};
+/* which team types can handle which incident category, best first */
+var FIT={fire:['fire','rescue'],medical:['medical'],road:['medical','police','rescue'],flood:['flood','rescue'],collapse:['rescue','fire','medical'],other:['rescue','police']};
+var TKEY='sosx:teams',TEAMS=[],ROUTES={};
+var KW=['trapped','explosion','unconscious','fatal','dead','bleeding','spreading','collapsed','children','gas leak','not breathing'];
+var KEY='resq:incidents',mem=null,sel=null,cat='',armed=false;
+var $=function(i){return document.getElementById(i)};
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
+
+function classify(c,n,t){
+  var s=BASE[c]!=null?BASE[c]:1,why=[];n=+n||0;
+  if(c)why.push(T(CATS[c]));
+  if(n>=50){s+=5}else if(n>=20){s+=4}else if(n>=10){s+=3}else if(n>=5){s+=2}else if(n>=1){s+=1}
+  if(n)why.push(n+' '+T('affected'));
+  var low=(t||'').toLowerCase(),hits=KW.filter(function(k){return low.indexOf(k)>-1});
+  if(hits.length){s+=2;why.push('“'+hits[0]+'” '+T('mentioned'))}
+  return {sev:s>=6?'Critical':s>=4?'High':s>=3?'Medium':'Low',why:why.join(' · ')};
+}
+function seed(){
+  var n=Date.now(),m=60000;
+  return ll([
+   mk('Warehouse fire, Anna Salai','fire','Heavy smoke and flames on second floor, fire spreading to neighbouring unit.','Anna Salai, Chennai',12,'',n-4*m,'In Progress'),
+   mk('Bus collision on OMR','road','Two vehicles collided, several passengers injured.','OMR, Sholinganallur',8,'98400 00000',n-22*m,'Pending'),
+   mk('Cardiac emergency','medical','Elderly man collapsed, not breathing.','T Nagar, Chennai',1,'',n-35*m,'Reported'),
+   mk('Street flooding','flood','Water level rising, vehicles stuck.','Velachery Main Rd',4,'',n-3*60*m,'Pending'),
+   mk('Minor wall crack','other','Compound wall cracked after rain, no injuries.','Adyar, Chennai',0,'',n-9*60*m,'Resolved')]).map(function(x,k){x.id='INC-'+(1001+k);x.team=k===0?'TM-101':'';if(k===0)x.status='Assigned';return x});
+}
+function seedTeams(){
+  return [['TM-101','Fire Unit Egmore','fire',13.0732,80.2609,'Busy','INC-1001'],['TM-102','Fire Unit Guindy','fire',13.0067,80.2206],['TM-201','Ambulance T Nagar','medical',13.0418,80.2341],['TM-202','Ambulance Adyar','medical',13.0012,80.2565],['TM-301','Rescue Team Velachery','rescue',12.9791,80.2209],['TM-401','Traffic Police OMR','police',12.901,80.2279],['TM-501','Flood Response Saidapet','flood',13.0213,80.2231]]
+   .map(function(r){return{id:r[0],name:r[1],cat:r[2],lat:r[3],lng:r[4],status:r[5]||'Available',incident:r[6]||''}});
+}
+/* ---------- Round 2: intelligent prioritisation ----------
+   score = severity weight + people affected + time waiting + category risk  (0-125) */
+var SEVW={Low:10,Medium:25,High:45,Critical:70};
+function prio(i){
+  if(i.status==='Resolved')return 0;
+  var age=Math.max(0,(Date.now()-i.at)/60000);
+  return Math.round(SEVW[i.sev]+Math.min(20,(+i.ppl||0)*0.4)+Math.min(25,age/6)+(BASE[i.cat]||1)*3);
+}
+function prioWhy(i){return i.sev+' severity, '+(i.ppl||0)+' people, waiting '+ago(i.at)+', '+CATS[i.cat]}
+/* ---------- Round 2: distance + nearest suitable team ---------- */
+function km(a,b){var R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lng-a.lng)*r,x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);return 2*R*Math.asin(Math.sqrt(x))}
+function eta(d){return Math.max(2,Math.round(d/30*60))} /* ~30 km/h city driving */
+function candidates(i){
+  if(typeof i.lat!=='number')return [];
+  var fit=FIT[i.cat]||[];
+  return TEAMS.filter(function(t){return t.status==='Available'}).map(function(t){var f=fit.indexOf(t.cat);return{t:t,d:km(i,t),fit:f<0?9:f}})
+    .sort(function(a,b){return a.fit-b.fit||a.d-b.d});
+}
+/* best fit = the closest team of the most suitable type; if that type is >2.5x farther than a secondary-type team, use the closer one */
+function best(i){
+  var c=candidates(i).filter(function(x){return x.fit<9});if(!c.length)return candidates(i)[0]||null;
+  var b=c[0];c.forEach(function(x){if(x.d*2.5<b.d)b=x});return b;
+}
+function teamOf(i){return TEAMS.filter(function(t){return t.id===i.team})[0]}
+function release(i){var t=teamOf(i);if(t&&t.incident===i.id){t.status='Available';t.incident='';q('PATCH','/teams/'+t.id,{status:'Available',incident:''})}saveT()}
+function assign(i,t){
+  if(teamOf(i))release(i);
+  i.team=t.id;i.status='Assigned';i.asg=Date.now();t.status='Busy';t.incident=i.id;
+  save();saveT();q('PATCH','/incidents/'+i.id,{status:'Assigned',team:t.id});q('PATCH','/teams/'+t.id,{status:'Busy',incident:i.id});
+  route(i,t);
+}
+function route(i,t){
+  var k=i.id+'>'+t.id;if(ROUTES[k]!==undefined||!navigator.onLine)return;ROUTES[k]=null;
+  fetch('https://router.project-osrm.org/route/v1/driving/'+t.lng+','+t.lat+';'+i.lng+','+i.lat+'?overview=full&geometries=geojson').then(function(r){return r.json()}).then(function(j){
+    var r=j.routes&&j.routes[0];if(!r)return;ROUTES[k]={pts:r.geometry.coordinates.map(function(c){return[c[1],c[0]]}),km:r.distance/1000,min:Math.round(r.duration/60)};plot();if(sel&&sel.id===i.id&&$('dlg').open)drawTeam();
+  }).catch(function(){});
+}
+function saveT(){try{localStorage.setItem(TKEY,JSON.stringify(TEAMS))}catch(e){}}
+function drawTeam(){
+  var tm=teamOf(sel),h='';
+  if(tm){
+    var r=ROUTES[sel.id+'>'+tm.id],d=typeof sel.lat==='number'?km(sel,tm):null;
+    if(!r&&d!=null)route(sel,tm);
+    h='<div class="card" style="padding:14px;background:var(--bg)"><b>'+TICO[tm.cat]+' '+esc(tm.name)+'</b> <span class="pill" style="background:var(--p2)">'+esc(tm.id)+'</span>'+
+      '<div class="kv"><span>Type</span>'+TCATS[tm.cat]+'</div><div class="kv"><span>Team status</span>'+tm.status+'</div>'+
+      (d!=null?'<div class="kv"><span>Straight-line distance</span>'+d.toFixed(1)+' km</div>':'')+
+      (r&&r.km?'<div class="kv"><span>Road route</span>'+r.km.toFixed(1)+' km · ~'+r.min+' min</div>':(d!=null?'<div class="kv"><span>Estimated arrival</span>~'+eta(d)+' min</div>':''))+
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button type="button" class="btn ghost" id="showrt">🗺️ Show route</button><button type="button" class="btn ghost" id="unassign">Release team</button></div></div>';
+  }else if(sel.status!=='Resolved'){
+    var c=candidates(sel),b=best(sel);
+    if(typeof sel.lat!=='number')h='<div style="color:var(--mu)">Waiting for this location to be found on the map before teams can be matched.</div>';
+    else if(!c.length)h='<div style="color:var(--rl)">No response team is available right now.</div>';
+    else h='<button type="button" class="btn" id="auto" style="width:100%">Assign nearest suitable team: '+TICO[b.t.cat]+' '+esc(b.t.name)+' ('+b.d.toFixed(1)+' km, ~'+eta(b.d)+' min)</button>'+
+      '<div style="display:flex;gap:8px;margin-top:10px"><select id="pick" class="in" style="margin:0">'+c.map(function(x){return '<option value="'+x.t.id+'">'+esc(x.t.name)+' · '+TCATS[x.t.cat]+' · '+x.d.toFixed(1)+' km'+(x.fit<9?'':' (not a match)')+'</option>'}).join('')+'</select><button type="button" class="btn ghost" id="assignpick">Assign</button></div>';
+  }else h='<div style="color:var(--mu)">Resolved.</div>';
+  $('dteam').innerHTML=h;
+}
+
+function mk(t,c,d,l,p,ct,at,st){var r=classify(c,p,t+' '+d);return{id:'INC-'+(1000+Math.floor(Math.random()*9000)),title:t,cat:c,desc:d,loc:l,ppl:p,contact:ct,sev:r.sev,why:r.why,status:st||'Reported',at:at}}
+var lang='en',tok='',OB=[],fl=false,last=null,voiceUsed=false,rec=null,busy=false,LC={en:'en-IN',ta:'ta-IN',hi:'hi-IN'};
+try{tok=sessionStorage.getItem('sosx:tok')||''}catch(e){}
+try{TEAMS=JSON.parse(localStorage.getItem(TKEY)||'null')||seedTeams()}catch(e){TEAMS=seedTeams()}
+try{OB=JSON.parse(localStorage.getItem('sosx:ob')||'[]')}catch(e){OB=[]}
+
+/* ---------- multilanguage ---------- */
+var D={};
+[
+['Home','முகப்பு','होम'],['Report','புகார்','रिपोर्ट'],['Track','கண்காணி','ट्रैक'],['Live Map','நேரலை வரைபடம்','लाइव मैप'],['Dashboard','டாஷ்போர்டு','डैशबोर्ड'],['Incidents','சம்பவங்கள்','घटनाएँ'],['Admin login','நிர்வாகி உள்நுழைவு','एडमिन लॉगिन'],['Log out','வெளியேறு','लॉग आउट'],['Online','ஆன்லைன்','ऑनलाइन'],['Offline','ஆஃப்லைன்','ऑफ़लाइन'],
+['24/7 EMERGENCY COORDINATION','24/7 அவசரகால ஒருங்கிணைப்பு','24/7 आपातकालीन समन्वय'],['One report.','ஒரே புகார்.','एक रिपोर्ट।'],['Faster response.','விரைவான உதவி.','तेज़ प्रतिक्रिया।'],
+['SOSX360 collects emergency reports, rates their severity automatically and gives responders one live view of every incident.','SOSX360 அவசரகால புகார்களைச் சேகரித்து, தீவிரத்தை தானாக மதிப்பிட்டு, ஒவ்வொரு சம்பவத்தையும் ஒரே நேரலைத் திரையில் காட்டுகிறது.','SOSX360 आपातकालीन रिपोर्ट इकट्ठा करता है, गंभीरता अपने-आप आँकता है और हर घटना का एक लाइव दृश्य देता है।'],
+['Report an emergency','அவசரநிலையைப் புகாரளி','आपात स्थिति की रिपोर्ट करें'],['Track a report','புகாரைக் கண்காணி','रिपोर्ट ट्रैक करें'],['Report by voice','குரலில் புகாரளி','आवाज़ से रिपोर्ट करें'],
+['In immediate danger? Call 112 now.','உடனடி ஆபத்தா? இப்போதே 112 ஐ அழைக்கவும்.','तुरंत खतरे में हैं? अभी 112 पर कॉल करें।'],
+['Police 100 · Fire 101 · Ambulance 102 / 108. This platform helps coordinate response and does not replace emergency calls.','காவல்துறை 100 · தீயணைப்பு 101 · ஆம்புலன்ஸ் 102 / 108. இந்த தளம் உதவி ஒருங்கிணைப்புக்கு மட்டுமே; அவசர அழைப்புக்கு மாற்றல்ல.','पुलिस 100 · दमकल 101 · एम्बुलेंस 102 / 108। यह प्लेटफ़ॉर्म समन्वय में मदद करता है, आपातकालीन कॉल का विकल्प नहीं है।'],
+['Reports received','பெறப்பட்ட புகார்கள்','प्राप्त रिपोर्ट'],['Active incidents','செயலில் உள்ள சம்பவங்கள்','सक्रिय घटनाएँ'],['Critical right now','இப்போது அதிதீவிரம்','अभी गंभीर'],['Resolved','தீர்க்கப்பட்டது','सुलझा'],
+['Live emergency map','நேரலை அவசரகால வரைபடம்','लाइव आपातकालीन मैप'],['How it works','இது எப்படி செயல்படுகிறது','यह कैसे काम करता है'],['Step 1','படி 1','चरण 1'],['Step 2','படி 2','चरण 2'],['Step 3','படி 3','चरण 3'],
+['Auto-classify','தானியங்கி வகைப்பாடு','स्वचालित वर्गीकरण'],['Respond','நடவடிக்கை','प्रतिक्रिया'],
+['Describe what is happening, where, and how many people are affected.','என்ன நடக்கிறது, எங்கே, எத்தனை பேர் பாதிக்கப்பட்டனர் என்பதை விவரிக்கவும்.','बताइए क्या हो रहा है, कहाँ, और कितने लोग प्रभावित हैं।'],
+['Category, people affected and danger signals set a severity from Low to Critical.','வகை, பாதிக்கப்பட்டோர் எண்ணிக்கை, ஆபத்து சொற்கள் மூலம் குறைவு முதல் அதிதீவிரம் வரை மதிப்பிடப்படும்.','श्रेणी, प्रभावित लोग और खतरे के संकेतों से गंभीरता कम से गंभीर तक तय होती है।'],
+['Responders prioritise the dashboard and update status until it is resolved.','மீட்புப் பணியாளர்கள் டாஷ்போர்டில் முன்னுரிமை அளித்து தீரும் வரை நிலையைப் புதுப்பிப்பர்.','रेस्पॉन्डर डैशबोर्ड से प्राथमिकता तय करते हैं और समाधान तक स्थिति अपडेट करते हैं।'],
+['What you can report','எதைப் புகாரளிக்கலாம்','आप क्या रिपोर्ट कर सकते हैं'],
+['Fire Emergency','தீ விபத்து','आग की आपात स्थिति'],['Road Accident','சாலை விபத்து','सड़क दुर्घटना'],['Medical Emergency','மருத்துவ அவசரம்','चिकित्सा आपात'],['Flood','வெள்ளம்','बाढ़'],['Building Collapse','கட்டிட இடிபாடு','इमारत गिरना'],['Other Emergencies','பிற அவசரநிலைகள்','अन्य आपात स्थितियाँ'],
+['Low','குறைவு','कम'],['Medium','நடுத்தரம்','मध्यम'],['High','அதிகம்','उच्च'],['Critical','அதிதீவிரம்','गंभीर'],
+['Reported','புகாரளிக்கப்பட்டது','रिपोर्ट किया'],['Pending','நிலுவையில்','लंबित'],['In Progress','நடைபெறுகிறது','प्रगति में'],
+['Base severity: Low','அடிப்படை தீவிரம்: குறைவு','आधार गंभीरता: कम'],['Base severity: Medium','அடிப்படை தீவிரம்: நடுத்தரம்','आधार गंभीरता: मध्यम'],['Base severity: High','அடிப்படை தீவிரம்: அதிகம்','आधार गंभीरता: उच्च'],
+['SOSX360 · Emergency Response & Disaster Management Platform · In danger? Call 112','SOSX360 · அவசரகால மற்றும் பேரிடர் மேலாண்மை தளம் · ஆபத்தில்? 112 ஐ அழைக்கவும்','SOSX360 · आपातकालीन एवं आपदा प्रबंधन प्लेटफ़ॉर्म · खतरे में? 112 पर कॉल करें'],
+['Every second counts.','ஒவ்வொரு நொடியும் முக்கியம்.','हर सेकंड कीमती है।'],['Report it.','புகாரளியுங்கள்.','रिपोर्ट करें।'],
+['Submit an emergency and it is classified by severity instantly, then appears on the response team’s dashboard.','அவசரநிலையைச் சமர்ப்பியுங்கள்; தீவிரம் உடனே மதிப்பிடப்பட்டு மீட்புக் குழுவின் டாஷ்போர்டில் தோன்றும்.','आपात स्थिति दर्ज करें; गंभीरता तुरंत तय होगी और रिस्पॉन्स टीम के डैशबोर्ड पर दिखेगी।'],
+['Live severity preview','நேரடி தீவிர முன்னோட்டம்','लाइव गंभीरता पूर्वावलोकन'],['Fill the form to see the rating','மதிப்பீட்டைக் காண படிவத்தை நிரப்புங்கள்','रेटिंग देखने के लिए फ़ॉर्म भरें'],
+['Category','வகை','श्रेणी'],['Incident title','சம்பவத் தலைப்பு','घटना शीर्षक'],['Description','விவரம்','विवरण'],['Location','இடம்','स्थान'],['People affected','பாதிக்கப்பட்டோர்','प्रभावित लोग'],['Contact (optional)','தொடர்பு (விருப்பம்)','संपर्क (वैकल्पिक)'],['Submit emergency report','அவசரப் புகாரைச் சமர்ப்பி','आपातकालीन रिपोर्ट जमा करें'],
+['e.g. Warehouse fire near Anna Salai','எ.கா. அண்ணா சாலை அருகே கிடங்கு தீ','जैसे: अन्ना सलाई के पास गोदाम में आग'],['What is happening? Mention anyone trapped, injured, or spreading danger.','என்ன நடக்கிறது? சிக்கியவர், காயமடைந்தவர், பரவும் ஆபத்து இருந்தால் குறிப்பிடவும்.','क्या हो रहा है? फँसे, घायल या फैलते खतरे का उल्लेख करें।'],['Street, area, city','தெரு, பகுதி, நகரம்','सड़क, इलाका, शहर'],['Phone or email','தொலைபேசி அல்லது மின்னஞ்சல்','फ़ोन या ईमेल'],
+['Choose a category.','வகையைத் தேர்ந்தெடுக்கவும்.','श्रेणी चुनें।'],['Enter a title (min 4 characters).','தலைப்பை உள்ளிடவும் (குறைந்தது 4 எழுத்துகள்).','शीर्षक लिखें (कम से कम 4 अक्षर)।'],['Describe the situation (min 10 characters).','நிலைமையை விவரிக்கவும் (குறைந்தது 10 எழுத்துகள்).','स्थिति बताएं (कम से कम 10 अक्षर)।'],['Enter the location.','இடத்தை உள்ளிடவும்.','स्थान लिखें।'],['Enter a whole number, 0 or more.','0 அல்லது அதற்கு மேற்பட்ட முழு எண்ணை உள்ளிடவும்.','0 या अधिक पूर्ण संख्या लिखें।'],
+['Report received','புகார் பெறப்பட்டது','रिपोर्ट प्राप्त हुई'],['Reference','குறிப்பு எண்','संदर्भ'],['Responders can now see this incident on the dashboard.','மீட்புக் குழு இப்போது இதை டாஷ்போர்டில் காணலாம்.','रेस्पॉन्डर अब इसे डैशबोर्ड पर देख सकते हैं।'],['Report another','மற்றொன்றைப் புகாரளி','एक और रिपोर्ट करें'],['Open dashboard','டாஷ்போர்டைத் திற','डैशबोर्ड खोलें'],['Read aloud','சத்தமாகப் படி','ज़ोर से सुनें'],['Speak','பேசவும்','बोलें'],['Listening…','கேட்கிறது…','सुन रहा है…'],['Voice input is not supported in this browser (use Chrome).','இந்த உலாவியில் குரல் உள்ளீடு இல்லை (Chrome பயன்படுத்தவும்).','इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं (Chrome इस्तेमाल करें)।'],
+['Command Dashboard','கட்டுப்பாட்டு டாஷ்போர்டு','कमांड डैशबोर्ड'],['Live overview of reported emergencies','புகாரளிக்கப்பட்ட அவசரநிலைகளின் நேரடி நிலை','रिपोर्ट की गई आपात स्थितियों का लाइव अवलोकन'],['New incident','புதிய சம்பவம்','नई घटना'],['Total reported','மொத்த புகார்கள்','कुल रिपोर्ट'],['Incidents by category','வகை வாரியாக சம்பவங்கள்','श्रेणी अनुसार घटनाएँ'],['Needs attention','கவனம் தேவை','ध्यान आवश्यक'],['No critical or high incidents open.','அதிதீவிர அல்லது அதிக சம்பவங்கள் இல்லை.','कोई गंभीर या उच्च घटना खुली नहीं।'],
+['Incident Management','சம்பவ மேலாண்மை','घटना प्रबंधन'],['All statuses','அனைத்து நிலைகள்','सभी स्थितियाँ'],['All severities','அனைத்து தீவிரங்கள்','सभी गंभीरता'],['All categories','அனைத்து வகைகள்','सभी श्रेणियाँ'],['Reset demo data','டெமோ தரவை மீட்டமை','डेमो डेटा रीसेट करें'],['No incidents match these filters.','இந்த வடிப்பான்களுக்கு சம்பவங்கள் இல்லை.','इन फ़िल्टर से कोई घटना नहीं मिली।'],
+['Update status','நிலையைப் புதுப்பி','स्थिति अपडेट करें'],['Delete report','புகாரை நீக்கு','रिपोर्ट हटाएँ'],['Click again to confirm delete','உறுதிசெய்ய மீண்டும் அழுத்தவும்','पुष्टि के लिए फिर क्लिक करें'],['Close','மூடு','बंद करें'],['Not provided','வழங்கப்படவில்லை','उपलब्ध नहीं'],['Contact','தொடர்பு','संपर्क'],
+['Responders only. Enter the admin password.','மீட்புப் பணியாளர்களுக்கு மட்டும். நிர்வாகி கடவுச்சொல்லை உள்ளிடவும்.','केवल रेस्पॉन्डर के लिए। एडमिन पासवर्ड डालें।'],['Password','கடவுச்சொல்','पासवर्ड'],['Log in','உள்நுழை','लॉग इन'],['Cancel','ரத்து','रद्द करें'],['Incorrect passcode.','தவறான கடவுச்சொல்.','गलत पासवर्ड।'],
+['Enter the reference number you received after submitting, for example INC-1234.','சமர்ப்பித்த பின் கிடைத்த குறிப்பு எண்ணை உள்ளிடவும், எ.கா. INC-1234.','जमा करने के बाद मिला संदर्भ नंबर डालें, जैसे INC-1234।'],['Reference number','குறிப்பு எண்','संदर्भ नंबर'],['Check status','நிலையைச் சரிபார்','स्थिति जाँचें'],['No report found with that number.','அந்த எண்ணில் புகார் இல்லை.','इस नंबर की कोई रिपोर्ट नहीं मिली।'],
+['Live Incident Map','நேரலை சம்பவ வரைபடம்','लाइव घटना मैप'],['Faded = Resolved','மங்கல் = தீர்ந்தது','फीका = सुलझा'],
+['Teams','குழுக்கள்','टीमें'],['Response Teams','மீட்புக் குழுக்கள்','रिस्पॉन्स टीमें'],['Priority queue','முன்னுரிமை வரிசை','प्राथमिकता सूची'],['Assigned','ஒதுக்கப்பட்டது','सौंपा गया'],['Available teams','கிடைக்கும் குழுக்கள்','उपलब्ध टीमें'],['Busy teams','பணியில் உள்ள குழுக்கள்','व्यस्त टीमें'],['Total incidents','மொத்த சம்பவங்கள்','कुल घटनाएँ'],['Response team','மீட்புக் குழு','रिस्पॉन्स टीम'],['Add a team','குழுவைச் சேர்','टीम जोड़ें'],['Team name','குழு பெயர்','टीम का नाम'],['Response category','குழு வகை','टीम श्रेणी'],['Current location','தற்போதைய இடம்','वर्तमान स्थान'],['Add team','குழுவைச் சேர்','टीम जोड़ें'],['Release team','குழுவை விடுவி','टीम मुक्त करें'],['Show route','வழியைக் காட்டு','रास्ता दिखाएँ'],['Assign','ஒதுக்கு','सौंपें'],['Response performance','செயல்திறன்','प्रतिक्रिया प्रदर्शन'],['affected','பாதிப்பு','प्रभावित'],['mentioned','குறிப்பிடப்பட்டது','उल्लेख'],['min ago','நிமிடம் முன்','मिनट पहले'],['h ago','மணி முன்','घंटे पहले'],['d ago','நாள் முன்','दिन पहले']
+].forEach(function(r){D[r[0]]=[r[1],r[2]]});
+function T(s){
+  if(lang==='en'||typeof s!=='string')return s;
+  var m=/^([^A-Za-z0-9]*)([\s\S]*?)(\s*)$/.exec(s),r=D[m[2]]||D[m[2].charAt(0)+m[2].slice(1).toLowerCase()];
+  return r?m[1]+r[lang==='ta'?0:1]+m[3]:s;
+}
+function tr(){
+  var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),n,a=[];
+  while((n=w.nextNode()))a.push(n);
+  a.forEach(function(n){
+    var p=n.parentNode&&n.parentNode.nodeName;if(p==='SCRIPT'||p==='STYLE'||p==='TEXTAREA')return;
+    if(n.__t===undefined||n.__t!==n.nodeValue)n.__o=n.nodeValue;
+    var t=lang==='en'?n.__o:T(n.__o);if(n.nodeValue!==t)n.nodeValue=t;n.__t=t;
+  });
+  document.querySelectorAll('[placeholder]').forEach(function(e){if(e.__p===undefined)e.__p=e.getAttribute('placeholder');e.setAttribute('placeholder',lang==='en'?e.__p:T(e.__p))});
+}
+var mo=new MutationObserver(function(){if(lang==='en'||busy)return;busy=true;mo.disconnect();tr();obs();busy=false});
+function obs(){mo.observe(document.body,{childList:true,subtree:true,characterData:true})}
+function setLang(l){lang=l;try{localStorage.setItem('sosx:lang',l)}catch(e){}document.documentElement.lang=l;go(location.hash.slice(1)||'home');preview();tr()}
+
+/* ---------- voice assistant ---------- */
+function guess(t){
+  t=t.toLowerCase();
+  var m=[['fire',/fire|burn|smoke|தீ|आग|धुआँ/],['road',/accident|collision|crash|vehicle|bus|car|விபத்து|दुर्घटना|टक्कर/],['medical',/medical|heart|injur|ambulance|unconscious|bleeding|மருத்துவ|காயம்|चोट|घायल|दिल/],['flood',/flood|water|வெள்ளம்|बाढ़|पानी/],['collapse',/collaps|building|இடிந்|ढह|इमारत/]];
+  for(var i=0;i<m.length;i++)if(m[i][1].test(t))return m[i][0];
+  return '';
+}
+function say(txt){if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(txt);u.lang=LC[lang];speechSynthesis.speak(u)}
+var SPK={
+ en:function(id,s){return 'Report received. Your reference number is '+id+'. Severity is '+s+'. If you are in immediate danger, call 112.'},
+ ta:function(id,s){return 'புகார் பெறப்பட்டது. உங்கள் குறிப்பு எண் '+id+'. தீவிரம் '+T(s)+'. உடனடி ஆபத்தில் இருந்தால் 112 ஐ அழைக்கவும்.'},
+ hi:function(id,s){return 'रिपोर्ट प्राप्त हुई। आपका संदर्भ नंबर '+id+' है। गंभीरता '+T(s)+' है। तुरंत खतरे में हों तो 112 पर कॉल करें।'}
+};
+
+/* ---------- storage + backend sync (offline-first) ---------- */
+function load(){
+  try{var r=localStorage.getItem(KEY);if(r){mem=JSON.parse(r);return}}catch(e){}
+  if(!mem){mem=seed();save()}
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(mem))}catch(e){}}
+function saveOB(){try{localStorage.setItem('sosx:ob',JSON.stringify(OB))}catch(e){}$('obq').textContent='\u23f3 '+OB.length;$('obq').classList.toggle('hide',!OB.length)}
+function api(m,u,b){
+  var h={'Content-Type':'application/json'};if(tok)h.Authorization='Bearer '+tok;
+  return fetch('/api'+u,{method:m,headers:h,body:b?JSON.stringify(b):undefined}).then(function(r){
+    if(!r.ok){var e=new Error('http '+r.status);e.status=r.status;throw e}
+    return r.json();
+  });
+}
+function net(ok){$('net').textContent=ok?'Online':'Offline';$('net').className='pill '+(ok?'Low':'High')}
+function q(m,u,b){OB.push({m:m,u:u,b:b});saveOB();flush()}
+function applyOB(){
+  OB.forEach(function(o){
+    var id=o.u.split('/')[2];
+    if(o.u.indexOf('/teams')===0){
+      if(o.m==='POST'){if(!TEAMS.some(function(t){return t.id===o.b.id}))TEAMS.push(o.b)}
+      else if(o.m==='PATCH'){TEAMS.forEach(function(t){if(t.id===id)Object.keys(o.b).forEach(function(k){t[k]=o.b[k]})})}
+      else if(o.m==='DELETE'){TEAMS=TEAMS.filter(function(t){return t.id!==id})}
+      return;
+    }
+    if(o.m==='POST'){if(!mem.some(function(i){return i.id===o.b.id}))mem.unshift(o.b)}
+    else if(o.m==='PATCH'){mem.forEach(function(i){if(i.id===id){if(o.b.status)i.status=o.b.status;if(o.b.team!==undefined)i.team=o.b.team;if(typeof o.b.lat==='number'){i.lat=o.b.lat;i.lng=o.b.lng}}})}
+    else if(o.m==='DELETE'){mem=mem.filter(function(i){return i.id!==id})}
+  });
+}
+function rerender(){var v=location.hash.slice(1)||'home';if(v==='home')home();else if(v==='dashboard'&&admin)dash();else if(v==='incidents'&&admin)list();else if(v==='teams'&&admin)teamsView();plot()}
+function pull(){
+  return api('GET','/incidents').then(function(a){
+    if(!Array.isArray(a))throw new Error('bad');
+    var inc=a;return api('GET','/teams').then(function(t){if(Array.isArray(t)&&t.length)TEAMS=t}).catch(function(){}).then(function(){mem=inc;applyOB();save();saveT();net(true);rerender()});
+  }).catch(function(){net(navigator.onLine)});
+}
+function flush(){
+  if(fl||!OB.length)return pull();
+  fl=true;var o=OB[0];
+  return api(o.m,o.u,o.b).then(function(){OB.shift();saveOB();fl=false;return flush()}).catch(function(e){
+    fl=false;
+    if(e.status&&e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){OB.shift();saveOB();return flush()}
+    return pull();
+  });
+}
+function ago(t){var m=Math.max(1,Math.round((Date.now()-t)/60000));return m<60?m+' '+T('min ago'):m<1440?Math.round(m/60)+' '+T('h ago'):Math.round(m/1440)+' '+T('d ago')}
+
+/* nav */
+var VIEWS=['home','report','track','map','dashboard','incidents','teams'],admin=false,pending='';
+try{admin=sessionStorage.getItem('resq:admin')==='1'}catch(e){}
+function go(v){
+  if(VIEWS.indexOf(v)<0)v='home';
+  if((v==='dashboard'||v==='incidents'||v==='teams')&&!admin){pending=v;$('pass').value='';$('e-pass').textContent='';$('ldlg').showModal();v='home'}
+  VIEWS.forEach(function(x){$('v-'+x).classList.toggle('on',x===v)});
+  document.querySelectorAll('.adm').forEach(function(b){b.classList.toggle('hide',!admin)});
+  $('login').textContent=admin?'Log out':'Admin login';
+  if(v==='home'){home();homeMap()}if(v==='map')mapView();
+  document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.nav===v)});
+  if(v==='dashboard')dash();if(v==='incidents')list();if(v==='teams')teamsView();
+  if(location.hash!=='#'+v)location.hash=v;window.scrollTo(0,0);
+}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-nav]');if(b)go(b.dataset.nav)});
+window.addEventListener('hashchange',function(){go(location.hash.slice(1))});
+
+/* form */
+var ICO={fire:'🔥',road:'🚗',medical:'❤️',flood:'🌊',collapse:'🏢',other:'…'};
+Object.keys(CATS).forEach(function(k){var b=document.createElement('button');b.type='button';b.textContent=ICO[k]+' '+CATS[k];b.dataset.c=k;$('cats').appendChild(b)});
+$('cats').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;cat=b.dataset.c;
+  this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});$('e-cat').textContent='';preview()});
+function preview(){
+  var r=classify(cat,$('ppl').value,$('title').value+' '+$('desc').value),i=SEV.indexOf(r.sev);
+  $('pv').className='pill '+r.sev;$('pv').textContent=r.sev.toUpperCase();$('pvwhy').textContent=r.why||'Fill the form to see the rating';
+  var cl=['#6EE79A','#FFD04D','#FF9A4D','#E11D2E'];
+  [].forEach.call($('meter').children,function(el,k){el.style.background=k<=i?cl[i]:'#2A2A2F'});
+}
+['title','desc','ppl'].forEach(function(i){$(i).addEventListener('input',preview)});
+$('form').addEventListener('submit',function(e){
+  e.preventDefault();var ok=true;
+  function chk(id,bad,msg){$('e-'+id).textContent=bad?msg:'';if(bad)ok=false}
+  chk('cat',!cat,'Choose a category.');
+  chk('title',$('title').value.trim().length<4,'Enter a title (min 4 characters).');
+  chk('desc',$('desc').value.trim().length<10,'Describe the situation (min 10 characters).');
+  chk('loc',$('loc').value.trim().length<3,'Enter the location.');
+  var p=$('ppl').value;chk('ppl',p===''||isNaN(p)||+p<0||+p%1!==0,'Enter a whole number, 0 or more.');
+  if(!ok)return;
+  var inc=mk($('title').value.trim(),cat,$('desc').value.trim(),$('loc').value.trim(),+p,$('contact').value.trim(),Date.now(),'Reported');
+  mem.unshift(inc);save();q('POST','/incidents',inc);geocode(inc).then(plot);
+  $('d-id').textContent=inc.id;$('d-sev').className='pill '+inc.sev;$('d-sev').textContent=inc.sev.toUpperCase();
+  $('form').classList.add('hide');$('done').classList.remove('hide');last=inc;if(voiceUsed){say(SPK[lang](inc.id,inc.sev));voiceUsed=false}
+});
+$('again').addEventListener('click',function(){
+  $('form').reset();$('ppl').value=1;cat='';$('cats').querySelectorAll('button').forEach(function(b){b.classList.remove('on')});
+  $('done').classList.add('hide');$('form').classList.remove('hide');preview();
+});
+
+/* dashboard */
+function dash(){
+  var c=mem.filter(function(i){return i.sev==='Critical'&&i.status!=='Resolved'}).length;
+  var S=[['Total incidents',mem.length,''],['Critical',c,'background:var(--red);border-color:var(--red)'],['Available teams',TEAMS.filter(function(t){return t.status==='Available'}).length,'color:#5BB5FF'],['Busy teams',TEAMS.filter(function(t){return t.status==='Busy'}).length,'color:var(--org)'],['Assigned',mem.filter(function(i){return i.status==='Assigned'||i.status==='In Progress'}).length,'color:#B79BFF'],['Resolved',mem.filter(function(i){return i.status==='Resolved'}).length,'color:var(--grn)']];
+  $('stats').innerHTML=S.map(function(s,k){return '<div class="card stat" style="'+(k===1?s[2]:'')+'"><div class="lbl" style="'+(k===1?'color:#FFE0E3':'')+'">'+s[0]+'</div><b style="'+(k>1?s[2]:'')+'">'+s[1]+'</b></div>'}).join('');
+  var mx=Math.max.apply(null,Object.keys(CATS).map(function(k){return mem.filter(function(i){return i.cat===k}).length}).concat([1]));
+  $('bycat').innerHTML=Object.keys(CATS).map(function(k){var n=mem.filter(function(i){return i.cat===k}).length;return '<div style="display:flex;justify-content:space-between"><span>'+CATS[k]+'</span><b>'+n+'</b></div><div class="bar"><i style="width:'+(n/mx*100)+'%"></i></div>'}).join('');
+  var u=sorted(mem.filter(function(i){return i.status!=='Resolved'})).slice(0,6);perf();
+  $('urgent').innerHTML=u.length?u.map(row).join(''):'<div style="color:var(--mu)">No open incidents.</div>';
+}
+function sorted(a){return a.slice().sort(function(x,y){return prio(y)-prio(x)||y.at-x.at})}
+function row(i){var tm=teamOf(i),p=prio(i);return '<button class="inc'+(i.sev==='Critical'?' crit':'')+'" data-id="'+esc(i.id)+'"><div style="display:flex;align-items:center"><span class="prio" title="Priority score: '+esc(prioWhy(i))+'">'+(p||'✓')+'</span><div><b>'+esc(i.title)+'</b><div style="color:var(--mu);font-size:13px">'+esc(T(CATS[i.cat]))+' · '+esc(i.loc)+' · '+ago(i.at)+(tm?' · '+TICO[tm.cat]+' '+esc(tm.name):'')+'</div></div></div><div style="text-align:right"><span class="pill '+i.sev+'">'+i.sev+'</span><div><span class="st st-'+i.status.split(' ')[0]+'">'+i.status+'</span></div></div></button>'}
+
+/* incidents */
+STAT.forEach(function(s){$('f-st').add(new Option(s,s))});SEV.forEach(function(s){$('f-sv').add(new Option(s,s))});Object.keys(CATS).forEach(function(k){$('f-ct').add(new Option(CATS[k],k))});
+['f-st','f-sv','f-ct'].forEach(function(i){$(i).addEventListener('change',list)});
+$('reset').addEventListener('click',function(){mem=seed();TEAMS=seedTeams();save();saveT();list()});
+function list(){
+  var a=sorted(mem).filter(function(i){return(!$('f-st').value||i.status===$('f-st').value)&&(!$('f-sv').value||i.sev===$('f-sv').value)&&(!$('f-ct').value||i.cat===$('f-ct').value)});
+  $('list').innerHTML=a.length?a.map(row).join(''):'<div class="card" style="color:var(--mu)">No incidents match these filters.</div>';
+}
+document.addEventListener('click',function(e){var b=e.target.closest('.inc');if(b)open(b.dataset.id)});
+function open(id){
+  sel=mem.filter(function(i){return i.id===id})[0];if(!sel)return;armed=false;draw();$('dlg').showModal();
+}
+function draw(){
+  $('dbadges').innerHTML='<span class="pill '+sel.sev+'">'+sel.sev+'</span><span class="pill" style="background:var(--p2)">'+esc(T(CATS[sel.cat]))+'</span><span class="pill" style="background:var(--p2)">'+esc(sel.id)+'</span>';
+  $('dt').textContent=sel.title;$('dmeta').textContent=sel.loc+' · reported '+ago(sel.at)+' · '+sel.why;
+  $('ddesc').textContent=sel.desc;$('dppl').textContent=sel.ppl;$('dcon').textContent=sel.contact||'Not provided';
+  $('seg').innerHTML=STAT.map(function(s){return '<button data-s="'+s+'" class="'+(s===sel.status?'on':'')+'">'+s+'</button>'}).join('');
+  $('del').textContent=armed?'Click again to confirm delete':'Delete report';
+  drawTeam();
+}
+$('seg').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var ns=b.dataset.s;if(ns==='Assigned'&&!teamOf(sel)){var bb=best(sel);if(!bb){$('dteam').insertAdjacentHTML('afterbegin','<div class="err">No available team to assign.</div>');return}assign(sel,bb.t);draw();list();dash();plot();return}sel.status=ns;if(ns==='Resolved'){sel.done=Date.now()}if((ns==='Resolved'||ns==='Reported'||ns==='Pending')&&teamOf(sel)){release(sel);sel.team='';q('PATCH','/incidents/'+sel.id,{team:''})}save();q('PATCH','/incidents/'+sel.id,{status:sel.status});draw();list();dash()});
+$('del').addEventListener('click',function(){
+  if(!armed){armed=true;draw();return}
+  release(sel);q('DELETE','/incidents/'+sel.id);mem=mem.filter(function(i){return i!==sel});save();$('dlg').close();list();dash();
+});
+$('close').addEventListener('click',function(){$('dlg').close();list();dash()});
+
+function ll(a){var c=[[13.0604,80.2496],[12.901,80.2279],[13.0418,80.2341],[12.9815,80.218],[13.0012,80.2565]];a.forEach(function(x,k){x.lat=c[k][0];x.lng=c[k][1]});return a}
+var map,layer,geoBusy=false,SC={Low:'#6EE79A',Medium:'#FFD04D',High:'#FF9A4D',Critical:'#E11D2E'};
+function geocode(i){
+  return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(i.loc)).then(function(r){return r.json()}).then(function(a){if(a&&a[0]){i.lat=+a[0].lat;i.lng=+a[0].lon;q('PATCH','/incidents/'+i.id,{lat:i.lat,lng:i.lng})}else{i.nogeo=1};save()}).catch(function(){if(navigator.onLine)i.nogeo=1});
+}
+function geoFill(){
+  if(geoBusy||!navigator.onLine)return;var t=mem.filter(function(i){return typeof i.lat!=='number'&&!i.nogeo})[0];if(!t)return;
+  geoBusy=true;geocode(t).then(function(){geoBusy=false;plot();setTimeout(geoFill,1100)});
+}
+function mapView(){
+  if(typeof L==='undefined'){$('mapmsg').textContent='The map library could not load. Check your internet connection and reload.';return}
+  $('mapmsg').textContent='';
+  if(!map){map=L.map('map').setView([13.0827,80.2707],11);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);layer=L.layerGroup().addTo(map)}
+  setTimeout(function(){map.invalidateSize();plot()},60);geoFill();
+}
+function plot(){if(map)plotOn(map,layer,'mapcount');if(hmap)plotOn(hmap,hlayer,'hmapcount')}
+var hmap,hlayer;
+function homeMap(){
+  if(typeof L==='undefined')return;
+  if(!hmap){hmap=L.map('hmap',{scrollWheelZoom:false}).setView([13.0827,80.2707],11);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(hmap);hlayer=L.layerGroup().addTo(hmap)}
+  setTimeout(function(){hmap.invalidateSize();plot()},60);geoFill();
+}
+function plotOn(map,layer,cid){
+  layer.clearLayers();var pts=[];
+  mem.forEach(function(i){
+    if(typeof i.lat!=='number')return;var done=i.status==='Resolved';
+    var m=L.circleMarker([i.lat,i.lng],{radius:i.sev==='Critical'?14:9,color:done?'#71717A':'#fff',weight:2,fillColor:SC[i.sev],fillOpacity:done?.35:.9}).addTo(layer);
+    m.bindPopup('<b>'+esc(i.title)+'</b><br>'+i.sev+' · '+esc(T(CATS[i.cat]))+'<br>Status: '+i.status+'<br>'+esc(i.loc)+'<br>'+esc(i.ppl)+' affected · '+ago(i.at));
+    pts.push([i.lat,i.lng]);
+  });
+  TEAMS.forEach(function(t){
+    var busy=t.status==='Busy',ic=L.divIcon({className:'',html:'<span class="tmi'+(busy?' busy':'')+'">'+TICO[t.cat]+'</span>',iconSize:[28,28],iconAnchor:[14,14]});
+    L.marker([t.lat,t.lng],{icon:ic}).addTo(layer).bindPopup('<b>'+esc(t.name)+'</b><br>'+TCATS[t.cat]+' team · '+t.status+(t.incident?'<br>Assigned: '+esc(t.incident):''));
+    var i=mem.filter(function(x){return x.id===t.incident&&x.team===t.id&&x.status!=='Resolved'})[0];
+    if(busy&&i&&typeof i.lat==='number'){
+      var r=ROUTES[i.id+'>'+t.id],d=km(i,t);if(!r)route(i,t);
+      var lab=(r&&r.km?r.km.toFixed(1)+' km by road · ~'+r.min+' min':d.toFixed(1)+' km · ~'+eta(d)+' min');
+      L.polyline(r&&r.pts?r.pts:[[t.lat,t.lng],[i.lat,i.lng]],{color:'#5BB5FF',weight:4,opacity:.85,dashArray:r&&r.pts?null:'8 8'}).addTo(layer).bindTooltip(esc(t.name)+' → '+esc(i.id)+': '+lab,{sticky:true});
+    }
+  });
+  if(pts.length&&layer.__n!==pts.length){map.fitBounds(pts,{padding:[40,40],maxZoom:14});layer.__n=pts.length}
+  $(cid).textContent=pts.length+' of '+mem.length+' incidents plotted · '+TEAMS.length+' teams ('+TEAMS.filter(function(t){return t.status==='Available'}).length+' available)';
+}
+function home(){
+  var open=mem.filter(function(i){return i.status!=='Resolved'}).length,cr=mem.filter(function(i){return i.sev==='Critical'&&i.status!=='Resolved'}).length;
+  var S=[['Reports received',mem.length],['Active incidents',open],['Critical right now',cr],['Resolved',mem.length-open]];
+  $('hstats').innerHTML=S.map(function(s,k){return '<div class="card stat" style="'+(k===2?'background:var(--red);border-color:var(--red)':'')+'"><div class="lbl" style="'+(k===2?'color:#FFE0E3':'')+'">'+s[0]+'</div><b>'+s[1]+'</b></div>'}).join('');
+  $('hcats').innerHTML=Object.keys(CATS).map(function(k){return '<div class="card"><b>'+ICO[k]+' '+CATS[k]+'</b><div style="color:var(--mu);font-size:14px;margin-top:6px">Base severity: '+(BASE[k]>=3?'High':BASE[k]>=2?'Medium':'Low')+'</div></div>'}).join('');
+}
+$('tform').addEventListener('submit',function(e){
+  e.preventDefault();var id=$('tid').value.trim().toUpperCase(),i=mem.filter(function(x){return x.id===id})[0];
+  if(!i&&id){api('GET','/incidents/'+encodeURIComponent(id)).then(function(r){showT(r)}).catch(function(){showT(null)});return}
+  showT(i);
+});
+function showT(i){
+  $('tres').innerHTML=i?'<div class="card"><span class="pill '+i.sev+'">'+i.sev+'</span><h3 style="margin:12px 0 4px">'+esc(i.title)+'</h3><div style="color:var(--mu);font-size:14px">'+esc(i.loc)+' · '+ago(i.at)+(teamOf(i)?' · Team: '+TICO[teamOf(i).cat]+' '+esc(teamOf(i).name):'')+'</div><div class="seg" style="margin-top:16px">'+STAT.map(function(s){return '<button type="button" disabled class="'+(STAT.indexOf(s)<=STAT.indexOf(i.status)?'on':'')+'">'+s+'</button>'}).join('')+'</div></div>':'<div class="card" style="color:var(--rl)">No report found with that number.</div>';
+}
+$('dteam').addEventListener('click',function(e){
+  var id=e.target.id;if(!sel)return;
+  if(id==='auto'){var b=best(sel);if(b)assign(sel,b.t)}
+  else if(id==='assignpick'){var t=TEAMS.filter(function(x){return x.id===$('pick').value})[0];if(t)assign(sel,t)}
+  else if(id==='unassign'){release(sel);sel.team='';if(sel.status==='Assigned')sel.status='Reported';save();q('PATCH','/incidents/'+sel.id,{team:'',status:sel.status})}
+  else if(id==='showrt'){var tm=teamOf(sel),s=sel;$('dlg').close();go('map');setTimeout(function(){if(map&&tm&&typeof s.lat==='number')map.fitBounds([[s.lat,s.lng],[tm.lat,tm.lng]],{padding:[60,60]})},250);return}
+  else return;
+  draw();list();dash();plot();
+});
+function perf(){
+  var open=mem.filter(function(i){return i.status!=='Resolved'}),un=open.filter(function(i){return !i.team}).length;
+  var tot=TEAMS.length||1,busy=TEAMS.filter(function(t){return t.status==='Busy'}).length;
+  var cr=open.filter(function(i){return i.sev==='Critical'}),crA=cr.filter(function(i){return i.team}).length;
+  var wait=open.length?Math.round(open.reduce(function(s,i){return s+(Date.now()-i.at)/60000},0)/open.length):0;
+  var avgD=[],a=mem.filter(function(i){return i.team&&i.status!=='Resolved'});a.forEach(function(i){var t=teamOf(i);if(t&&typeof i.lat==='number')avgD.push(km(i,t))});
+  var K=[['Open incidents without a team',un,un?'color:var(--rl)':'color:var(--grn)'],['Critical incidents covered',crA+' / '+cr.length,crA<cr.length?'color:var(--rl)':'color:var(--grn)'],['Team utilisation',Math.round(busy/tot*100)+'%',''],['Average waiting time (open)',wait<60?wait+' min':Math.round(wait/60)+' h',''],['Average team distance',avgD.length?(avgD.reduce(function(s,x){return s+x},0)/avgD.length).toFixed(1)+' km':'-','']];
+  $('perf').innerHTML=K.map(function(k){return '<div class="kv"><span>'+k[0]+'</span><b style="'+k[2]+'">'+k[1]+'</b></div>'}).join('')+
+    '<div class="lbl" style="margin-top:14px">Severity of open incidents</div><div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-top:8px;background:var(--bd)">'+
+    SEV.map(function(s){var n=open.filter(function(i){return i.sev===s}).length;return n?'<i title="'+s+': '+n+'" style="flex:'+n+';background:'+SC[s]+'"></i>':''}).join('')+'</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--mu)">'+SEV.map(function(s){return '<span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+SC[s]+'"></i> '+s+' '+open.filter(function(i){return i.sev===s}).length+'</span>'}).join('')+'</div>';
+}
+Object.keys(TCATS).forEach(function(k){$('tmcat').add(new Option(TICO[k]+' '+TCATS[k],k))});
+function teamsView(){
+  var av=TEAMS.filter(function(t){return t.status==='Available'}).length;
+  $('tmsum').textContent=TEAMS.length+' teams · '+av+' available · '+(TEAMS.length-av)+' busy';
+  $('tmlist').innerHTML=TEAMS.length?TEAMS.map(function(t){var i=mem.filter(function(x){return x.id===t.incident})[0];
+    return '<div class="tm"><div><b>'+TICO[t.cat]+' '+esc(t.name)+'</b> <span style="color:var(--mu);font-size:13px">'+esc(t.id)+'</span><div style="color:var(--mu);font-size:13px">'+TCATS[t.cat]+' · '+(+t.lat).toFixed(3)+', '+(+t.lng).toFixed(3)+(i?' · on <b style="color:var(--tx)">'+esc(i.id)+'</b> '+esc(i.title):'')+'</div></div>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="pill '+(t.status==='Available'?'Low':'High')+'">'+t.status+'</span><button type="button" class="btn ghost" data-tt="'+esc(t.id)+'" style="padding:6px 12px;min-height:36px">'+(t.status==='Available'?'Set busy':'Set available')+'</button><button type="button" class="btn ghost" data-td="'+esc(t.id)+'" style="padding:6px 12px;min-height:36px;color:var(--rl)">Remove</button></div></div>'}).join(''):'<div class="card" style="color:var(--mu)">No teams yet.</div>';
+}
+$('tmlist').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  var id=b.dataset.tt||b.dataset.td,t=TEAMS.filter(function(x){return x.id===id})[0];if(!t)return;
+  var i=mem.filter(function(x){return x.id===t.incident&&x.team===t.id})[0];
+  if(b.dataset.td||t.status==='Busy'){if(i){i.team='';if(i.status==='Assigned')i.status='Reported';q('PATCH','/incidents/'+i.id,{team:'',status:i.status});save()}}
+  if(b.dataset.td){TEAMS=TEAMS.filter(function(x){return x!==t});q('DELETE','/teams/'+t.id)}
+  else{t.status=t.status==='Available'?'Busy':'Available';t.incident='';q('PATCH','/teams/'+t.id,{status:t.status,incident:''})}
+  saveT();teamsView();plot();
+});
+$('tmform').addEventListener('submit',function(e){
+  e.preventDefault();var n=$('tmname').value.trim(),l=$('tmloc').value.trim();
+  $('e-tmname').textContent=n.length<2?'Enter a team name.':'';$('e-tmloc').textContent=l.length<3?'Enter the team location.':'';
+  if(n.length<2||l.length<3)return;
+  var t={id:'TM-'+(100+Math.floor(Math.random()*900)),name:n,cat:$('tmcat').value,lat:13.0827,lng:80.2707,status:'Available',incident:''};
+  var done=function(){TEAMS.push(t);saveT();q('POST','/teams',t);$('tmform').reset();teamsView();plot()};
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(l)).then(function(r){return r.json()}).then(function(a){if(a&&a[0]){t.lat=+a[0].lat;t.lng=+a[0].lon;done()}else{$('e-tmloc').textContent='Location not found. Try "Area, City".'}}).catch(function(){done()});
+});
+
+$('login').addEventListener('click',function(){
+  if(admin){admin=false;try{sessionStorage.removeItem('resq:admin');sessionStorage.removeItem('sosx:tok')}catch(e){}tok='';pull();go('home')}else{pending='dashboard';$('pass').value='';$('e-pass').textContent='';$('ldlg').showModal()}
+});
+$('lcancel').addEventListener('click',function(){$('ldlg').close()});
+$('lform').addEventListener('submit',function(e){
+  e.preventDefault();
+  var pw=$('pass').value;
+  function ok(t){admin=true;tok=t||'';try{sessionStorage.setItem('resq:admin','1');sessionStorage.setItem('sosx:tok',tok)}catch(x){}$('ldlg').close();go(pending||'dashboard');pull()}
+  api('POST','/login',{password:pw}).then(function(r){ok(r.token)}).catch(function(err){
+    /* demo passcode works only when no backend is reachable (local file / offline) */
+    if((err.status&&[404,405,501].indexOf(err.status)<0)||pw!=='admin123'){$('e-pass').textContent='Incorrect passcode.';return}
+    ok('');
+  });
+});
+try{var sl=localStorage.getItem('sosx:lang');if(sl)lang=sl}catch(e){}
+$('lang').value=lang;$('lang').addEventListener('change',function(){setLang(this.value)});
+$('mic').addEventListener('click',function(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){$('micst').textContent='Voice input is not supported in this browser (use Chrome).';return}
+  if(rec){rec.stop();return}
+  rec=new SR();rec.lang=LC[lang];rec.interimResults=false;rec.continuous=false;
+  $('micst').textContent='Listening\u2026';$('mic').classList.add('on');
+  rec.onresult=function(e){
+    var t=e.results[0][0].transcript;voiceUsed=true;
+    var d=$('desc');d.value=(d.value?d.value+' ':'')+t;
+    if(!$('title').value)$('title').value=t.slice(0,60);
+    var g=guess(t);if(g&&!cat){var b=document.querySelector('#cats [data-c="'+g+'"]');if(b)b.click()}
+    var m=t.match(/(\d+)\s*(people|persons|person|பேர்|लोग|व्यक्ति)/i);if(m)$('ppl').value=m[1];
+    preview();
+  };
+  rec.onerror=function(e){$('micst').textContent='Voice error: '+e.error};
+  rec.onend=function(){rec=null;$('mic').classList.remove('on');if($('micst').textContent.indexOf('Listening')===0)$('micst').textContent=''};
+  rec.start();
+});
+$('speak').addEventListener('click',function(){if(last)say(SPK[lang](last.id,last.sev))});
+$('voicego').addEventListener('click',function(){go('report');$('mic').click()});
+window.addEventListener('online',function(){net(true);flush()});
+window.addEventListener('offline',function(){net(false)});
+load();saveOB();preview();go(location.hash.slice(1)||'home');tr();obs();net(navigator.onLine);flush();setInterval(flush,15000);
+if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+})();
+</script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SOSX360 – Emergency Response Platform</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:dark;--bg:#0A0A0B;--p:#141416;--p2:#1B1B1F;--bd:#2A2A2F;--tx:#F4F4F5;--mu:#A1A1AA;--red:#E11D2E;--rl:#FF4D5A;--grn:#6EE79A;--yel:#FFD04D;--org:#FF9A4D;
