@@ -4,6 +4,7 @@ import { teams, isAdmin, TEAM_CATS, body, send, wrap } from '../_lib.js';
 // DELETE /api/teams/:id -> admin
 export default wrap(async (req, res) => {
   const id = String(req.query?.id || new URL(req.url, 'http://x').pathname.split('/').pop()).toUpperCase();
+  if (!/^TM-\d{3,6}$/.test(id)) return send(res, 404, { error: 'Not found' });
   if (!isAdmin(req)) return send(res, 401, { error: 'Admin login required' });
   if (req.method === 'PATCH') {
     const b = await body(req), p = {};
