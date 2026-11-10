@@ -8,6 +8,8 @@
 ![Supabase](https://img.shields.io/badge/database-Supabase%20Postgres-3ECF8E.svg)
 ![Vercel](https://img.shields.io/badge/hosting-Vercel-000000.svg)
 ![Languages](https://img.shields.io/badge/languages-English%20%7C%20Tamil%20%7C%20Hindi-E11D2E.svg)
+![Three.js](https://img.shields.io/badge/3D-Three.js%200.160-000000.svg)
+[![tests](https://github.com/RamavarshiniN/SOSX360/actions/workflows/test.yml/badge.svg)](https://github.com/RamavarshiniN/SOSX360/actions/workflows/test.yml)
 
 **Live demo:** https://sosx360-mauve.vercel.app · Built for **Code Clash 2026**, Emergency Response & Disaster Management track (Rounds 1 and 2).
 
@@ -51,6 +53,10 @@ During road accidents, fires, floods and building collapses, reports reach respo
 ### Beyond the brief
 | Feature | Why it matters |
 |---|---|
+| 🛰️ **3D command view (Three.js / WebGL)** | The real Chennai street map is rendered as a 3D plane. Each incident is a beacon at its true location, with height set by live priority and colour by severity. Active dispatches are drawn as glowing team-to-incident arcs, with bloom post-processing. Click a beacon to open the incident |
+| ⚡ **Auto-dispatch mode** | With one switch, every new Critical or High incident is immediately assigned the nearest suitable team, with a notification |
+| ⏱️ **SLA breach alert** | The dashboard flags any Critical incident that has waited over 5 minutes without a team, and admins are notified the moment a new Critical report arrives |
+| 🧠 **On-device speech recognition** | If the browser's cloud speech service fails, voice reporting switches to Whisper running in the browser (Hugging Face transformers.js). Audio never leaves the device, and it works offline after the first load |
 | 🌐 **English, Tamil and Hindi** | The whole interface switches language instantly, including new Round 2 labels |
 | 🎤 **Voice reporting** | Speak the emergency. The description is filled in, the category is guessed and "12 people" is detected from speech |
 | 🔊 **Read-aloud confirmation** | The reference ID and severity are spoken back in the chosen language |
@@ -78,7 +84,10 @@ During road accidents, fires, floods and building collapses, reports reach respo
 | **Node.js serverless functions** | `18+` | REST API in `/api` | Deploys with the frontend on Vercel, with no server to manage and no npm dependencies |
 | **Supabase (PostgreSQL)** | — | Persistent shared storage | Real SQL tables with check constraints and row-level security |
 | **HMAC-SHA256 signed tokens** | Node `crypto` | Admin authentication | Stateless 12-hour session tokens with timing-safe comparison |
-| **Vercel** | — | Hosting + CI/CD | Every push to `main` redeploys automatically |
+| **Vercel** | — | Hosting + CI/CD | Every push to `main` redeploys automatically; functions pinned to `syd1`, next to the database |
+| **Three.js** | `0.160` | 3D command view | WebGL rendering, OrbitControls, UnrealBloom post-processing, CSS2D labels |
+| **transformers.js (Whisper tiny)** | `3.0.2` | On-device speech-to-text fallback | Private and offline-capable; supports English, Tamil and Hindi |
+| **node:test + GitHub Actions** | Node 20 | Automated API tests on every push | 22 tests, no dependencies |
 
 ---
 
@@ -100,6 +109,9 @@ SOSX360/
 │   └── login.js            # POST admin login → signed token
 ├── schema.sql              # Round 1 table + sample incidents
 ├── schema-round2.sql       # Round 2: teams table, Assigned status, sample teams
+├── tests/api.test.mjs      # 22 automated API tests (node:test, in-memory Supabase fake)
+├── .github/workflows/test.yml  # CI: runs the tests on every push
+├── vercel.json             # pins serverless functions to the Sydney region
 ├── package.json
 └── README.md
 ```
@@ -225,6 +237,13 @@ curl -X POST https://sosx360-mauve.vercel.app/api/incidents \
 
 ---
 
+## ✅ Testing
+
+```bash
+npm test
+```
+There are 22 automated tests covering the severity rules, report validation, server-side severity override, idempotent offline retries, contact-detail privacy, login, forged and tampered token rejection, admin-only access control, the full assign → in progress → resolve lifecycle, invalid IDs, one-time public geocode writes, team validation and Supabase key handling. CI runs them on every push.
+
 ## 🔒 Security & Data Integrity
 
 - **Secrets stay on the server.** The database key lives only in Vercel environment variables and is never sent to the browser.
@@ -245,7 +264,7 @@ curl -X POST https://sosx360-mauve.vercel.app/api/incidents \
 - **Works on low-end phones.** There's no framework download; the full app is a single ~75 KB HTML file plus the map library.
 
 ### Known limitations (honest scope)
-- Updates appear on refresh and on a 15-second sync loop, not over WebSockets.
+- Other devices see changes through a 5-second sync loop, not over WebSockets.
 - Geocoding accuracy depends on how specific the location text is.
 - Voice input needs a browser with the Web Speech API (Chrome or Edge).
 - Public OSRM and Nominatim servers are rate-limited, which is fine for a demo; production should self-host them.
