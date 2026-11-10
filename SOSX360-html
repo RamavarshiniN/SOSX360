@@ -52,9 +52,14 @@ dialog::backdrop{background:#000A}
 .hide{display:none!important}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .tiles .card b{font-family:"Space Grotesk";font-size:18px}
+.st{display:inline-block;padding:3px 10px;border-radius:99px;font:600 12px Inter;margin-top:6px}
+.st-Reported{background:#2A2A2F;color:#D4D4D8}.st-Pending{background:#3A2F0B;color:var(--yel)}.st-In{background:#0B2A4A;color:#5BB5FF}.st-Resolved{background:#14301D;color:var(--grn)}
+#map,#hmap{position:relative;z-index:0}
 footer{border-top:1px solid var(--bd);padding:28px 32px;text-align:center;color:var(--mu);font-size:14px}
 @media(max-width:860px){main{padding:20px 16px}header{padding:12px 16px}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.dg,.tiles{grid-template-columns:1fr!important}}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 <header>
@@ -63,6 +68,7 @@ footer{border-top:1px solid var(--bd);padding:28px 32px;text-align:center;color:
     <button data-nav="home">Home</button>
     <button data-nav="report">Report</button>
     <button data-nav="track">Track</button>
+    <button data-nav="map">Live Map</button>
     <button data-nav="dashboard" class="adm hide">Dashboard</button>
     <button data-nav="incidents" class="adm hide">Incidents</button>
     <button id="login" style="border:1px solid #3A3A40">Admin login</button>
@@ -79,6 +85,8 @@ footer{border-top:1px solid var(--bd);padding:28px 32px;text-align:center;color:
   </div>
   <div class="card" style="border-color:#E11D2E66;background:#1E0A0D;margin-bottom:24px"><b>In immediate danger? Call 112 now.</b> <span style="color:var(--mu)">Police 100 · Fire 101 · Ambulance 102 / 108. This platform helps coordinate response and does not replace emergency calls.</span></div>
   <div class="stats" id="hstats"></div>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin:40px 0 12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:28px">Live emergency map</h2><span id="hmapcount" style="color:var(--mu)"></span></div>
+  <div id="hmap" style="height:420px;border-radius:14px;border:1px solid var(--bd)"></div>
   <h2 style="font-size:28px;margin:48px 0 16px">How it works</h2>
   <div class="tiles">
     <div class="card"><div class="lbl">Step 1</div><b>Report</b><p style="color:var(--mu);margin:8px 0 0">Describe what is happening, where, and how many people are affected.</p></div>
@@ -87,6 +95,15 @@ footer{border-top:1px solid var(--bd);padding:28px 32px;text-align:center;color:
   </div>
   <h2 style="font-size:28px;margin:48px 0 16px">What you can report</h2>
   <div class="tiles" id="hcats"></div>
+</section>
+
+<section id="v-map" class="view">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div><h1 style="font-size:34px">Live Incident Map</h1><div id="mapcount" style="color:var(--mu)"></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill Low">Low</span><span class="pill Medium">Medium</span><span class="pill High">High</span><span class="pill Critical">Critical</span><span class="pill" style="background:var(--p2);color:var(--mu)">Faded = Resolved</span></div>
+  </div>
+  <div id="mapmsg" class="err"></div>
+  <div id="map" style="height:64vh;min-height:380px;border-radius:14px;border:1px solid var(--bd)"></div>
 </section>
 
 <section id="v-track" class="view"><div style="max-width:620px;margin:0 auto">
@@ -185,7 +202,7 @@ footer{border-top:1px solid var(--bd);padding:28px 32px;text-align:center;color:
 <script>
 (function(){
 var CATS={fire:'Fire Emergency',road:'Road Accident',medical:'Medical Emergency',flood:'Flood',collapse:'Building Collapse',other:'Other Emergencies'};
-var BASE={fire:3,collapse:3,medical:2,road:2,flood:2,other:0};
+var BASE={fire:3,collapse:3,medical:2,road:2,flood:2,other:1};
 var SEV=['Low','Medium','High','Critical'],STAT=['Reported','Pending','In Progress','Resolved'];
 var KW=['trapped','explosion','unconscious','fatal','dead','bleeding','spreading','collapsed','children','gas leak','not breathing'];
 var KEY='resq:incidents',mem=null,sel=null,cat='',armed=false;
@@ -193,22 +210,22 @@ var $=function(i){return document.getElementById(i)};
 function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
 
 function classify(c,n,t){
-  var s=BASE[c]||0,why=[];n=+n||0;
+  var s=BASE[c]!=null?BASE[c]:1,why=[];n=+n||0;
   if(c)why.push(CATS[c]);
-  if(n>=20){s+=3}else if(n>=10){s+=2}else if(n>=3){s+=1}
+  if(n>=50){s+=5}else if(n>=20){s+=4}else if(n>=10){s+=3}else if(n>=5){s+=2}else if(n>=1){s+=1}
   if(n)why.push(n+' affected');
   var low=(t||'').toLowerCase(),hits=KW.filter(function(k){return low.indexOf(k)>-1});
   if(hits.length){s+=2;why.push('“'+hits[0]+'” mentioned')}
-  return {sev:s>=6?'Critical':s>=4?'High':s>=2?'Medium':'Low',why:why.join(' · ')};
+  return {sev:s>=6?'Critical':s>=4?'High':s>=3?'Medium':'Low',why:why.join(' · ')};
 }
 function seed(){
   var n=Date.now(),m=60000;
-  return [
+  return ll([
    mk('Warehouse fire, Anna Salai','fire','Heavy smoke and flames on second floor, fire spreading to neighbouring unit.','Anna Salai, Chennai',12,'',n-4*m,'In Progress'),
    mk('Bus collision on OMR','road','Two vehicles collided, several passengers injured.','OMR, Sholinganallur',8,'98400 00000',n-22*m,'Pending'),
    mk('Cardiac emergency','medical','Elderly man collapsed, not breathing.','T Nagar, Chennai',1,'',n-35*m,'Reported'),
    mk('Street flooding','flood','Water level rising, vehicles stuck.','Velachery Main Rd',4,'',n-3*60*m,'Pending'),
-   mk('Minor wall crack','other','Compound wall cracked after rain, no injuries.','Adyar, Chennai',0,'',n-9*60*m,'Resolved')];
+   mk('Minor wall crack','other','Compound wall cracked after rain, no injuries.','Adyar, Chennai',0,'',n-9*60*m,'Resolved')]);
 }
 function mk(t,c,d,l,p,ct,at,st){var r=classify(c,p,t+' '+d);return{id:'INC-'+(1000+Math.floor(Math.random()*9000)),title:t,cat:c,desc:d,loc:l,ppl:p,contact:ct,sev:r.sev,why:r.why,status:st||'Reported',at:at}}
 function load(){
@@ -219,7 +236,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(mem))}catch(e){}}
 function ago(t){var m=Math.max(1,Math.round((Date.now()-t)/60000));return m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'}
 
 /* nav */
-var VIEWS=['home','report','track','dashboard','incidents'],admin=false,pending='';
+var VIEWS=['home','report','track','map','dashboard','incidents'],admin=false,pending='';
 try{admin=sessionStorage.getItem('resq:admin')==='1'}catch(e){}
 function go(v){
   if(VIEWS.indexOf(v)<0)v='home';
@@ -227,7 +244,7 @@ function go(v){
   VIEWS.forEach(function(x){$('v-'+x).classList.toggle('on',x===v)});
   document.querySelectorAll('.adm').forEach(function(b){b.classList.toggle('hide',!admin)});
   $('login').textContent=admin?'Log out':'Admin login';
-  if(v==='home')home();
+  if(v==='home'){home();homeMap()}if(v==='map')mapView();
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('on',b.dataset.nav===v)});
   if(v==='dashboard')dash();if(v==='incidents')list();
   if(location.hash!=='#'+v)location.hash=v;window.scrollTo(0,0);
@@ -236,7 +253,8 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-nav]
 window.addEventListener('hashchange',function(){go(location.hash.slice(1))});
 
 /* form */
-Object.keys(CATS).forEach(function(k){var b=document.createElement('button');b.type='button';b.textContent=CATS[k];b.dataset.c=k;$('cats').appendChild(b)});
+var ICO={fire:'🔥',road:'🚗',medical:'❤️',flood:'🌊',collapse:'🏢',other:'…'};
+Object.keys(CATS).forEach(function(k){var b=document.createElement('button');b.type='button';b.textContent=ICO[k]+' '+CATS[k];b.dataset.c=k;$('cats').appendChild(b)});
 $('cats').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;cat=b.dataset.c;
   this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});$('e-cat').textContent='';preview()});
 function preview(){
@@ -256,7 +274,7 @@ $('form').addEventListener('submit',function(e){
   var p=$('ppl').value;chk('ppl',p===''||isNaN(p)||+p<0||+p%1!==0,'Enter a whole number, 0 or more.');
   if(!ok)return;
   var inc=mk($('title').value.trim(),cat,$('desc').value.trim(),$('loc').value.trim(),+p,$('contact').value.trim(),Date.now(),'Reported');
-  mem.unshift(inc);save();
+  mem.unshift(inc);save();geocode(inc).then(plot);
   $('d-id').textContent=inc.id;$('d-sev').className='pill '+inc.sev;$('d-sev').textContent=inc.sev.toUpperCase()+' SEVERITY';
   $('form').classList.add('hide');$('done').classList.remove('hide');
 });
@@ -276,7 +294,7 @@ function dash(){
   $('urgent').innerHTML=u.length?u.map(row).join(''):'<div style="color:var(--mu)">No critical or high incidents open.</div>';
 }
 function sorted(a){return a.slice().sort(function(x,y){return SEV.indexOf(y.sev)-SEV.indexOf(x.sev)||y.at-x.at})}
-function row(i){return '<button class="inc'+(i.sev==='Critical'?' crit':'')+'" data-id="'+esc(i.id)+'"><div><b>'+esc(i.title)+'</b><div style="color:var(--mu);font-size:13px">'+esc(CATS[i.cat])+' · '+esc(i.loc)+' · '+ago(i.at)+'</div></div><div style="text-align:right"><span class="pill '+i.sev+'">'+i.sev+'</span><div style="font-size:13px;color:var(--mu);margin-top:6px">'+i.status+'</div></div></button>'}
+function row(i){return '<button class="inc'+(i.sev==='Critical'?' crit':'')+'" data-id="'+esc(i.id)+'"><div><b>'+esc(i.title)+'</b><div style="color:var(--mu);font-size:13px">'+esc(CATS[i.cat])+' · '+esc(i.loc)+' · '+ago(i.at)+'</div></div><div style="text-align:right"><span class="pill '+i.sev+'">'+i.sev+'</span><div><span class="st st-'+i.status.split(' ')[0]+'">'+i.status+'</span></div></div></button>'}
 
 /* incidents */
 STAT.forEach(function(s){$('f-st').add(new Option(s,s))});SEV.forEach(function(s){$('f-sv').add(new Option(s,s))});Object.keys(CATS).forEach(function(k){$('f-ct').add(new Option(CATS[k],k))});
@@ -304,11 +322,44 @@ $('del').addEventListener('click',function(){
 });
 $('close').addEventListener('click',function(){$('dlg').close();list();dash()});
 
+function ll(a){var c=[[13.0604,80.2496],[12.901,80.2279],[13.0418,80.2341],[12.9815,80.218],[13.0012,80.2565]];a.forEach(function(x,k){x.lat=c[k][0];x.lng=c[k][1]});return a}
+var map,layer,geoBusy=false,SC={Low:'#6EE79A',Medium:'#FFD04D',High:'#FF9A4D',Critical:'#E11D2E'};
+function geocode(i){
+  return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(i.loc)).then(function(r){return r.json()}).then(function(a){if(a&&a[0]){i.lat=+a[0].lat;i.lng=+a[0].lon}else{i.nogeo=1};save()}).catch(function(){i.nogeo=1});
+}
+function geoFill(){
+  if(geoBusy)return;var t=mem.filter(function(i){return typeof i.lat!=='number'&&!i.nogeo})[0];if(!t)return;
+  geoBusy=true;geocode(t).then(function(){geoBusy=false;plot();setTimeout(geoFill,1100)});
+}
+function mapView(){
+  if(typeof L==='undefined'){$('mapmsg').textContent='The map library could not load. Check your internet connection and reload.';return}
+  $('mapmsg').textContent='';
+  if(!map){map=L.map('map').setView([13.0827,80.2707],11);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);layer=L.layerGroup().addTo(map)}
+  setTimeout(function(){map.invalidateSize();plot()},60);geoFill();
+}
+function plot(){if(map)plotOn(map,layer,'mapcount');if(hmap)plotOn(hmap,hlayer,'hmapcount')}
+var hmap,hlayer;
+function homeMap(){
+  if(typeof L==='undefined')return;
+  if(!hmap){hmap=L.map('hmap',{scrollWheelZoom:false}).setView([13.0827,80.2707],11);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(hmap);hlayer=L.layerGroup().addTo(hmap)}
+  setTimeout(function(){hmap.invalidateSize();plot()},60);geoFill();
+}
+function plotOn(map,layer,cid){
+  layer.clearLayers();var pts=[];
+  mem.forEach(function(i){
+    if(typeof i.lat!=='number')return;var done=i.status==='Resolved';
+    var m=L.circleMarker([i.lat,i.lng],{radius:i.sev==='Critical'?14:9,color:done?'#71717A':'#fff',weight:2,fillColor:SC[i.sev],fillOpacity:done?.35:.9}).addTo(layer);
+    m.bindPopup('<b>'+esc(i.title)+'</b><br>'+i.sev+' · '+esc(CATS[i.cat])+'<br>Status: '+i.status+'<br>'+esc(i.loc)+'<br>'+esc(i.ppl)+' affected · '+ago(i.at));
+    pts.push([i.lat,i.lng]);
+  });
+  if(pts.length)map.fitBounds(pts,{padding:[40,40],maxZoom:14});
+  $(cid).textContent=pts.length+' of '+mem.length+' incidents plotted';
+}
 function home(){
   var open=mem.filter(function(i){return i.status!=='Resolved'}).length,cr=mem.filter(function(i){return i.sev==='Critical'&&i.status!=='Resolved'}).length;
   var S=[['Reports received',mem.length],['Active incidents',open],['Critical right now',cr],['Resolved',mem.length-open]];
   $('hstats').innerHTML=S.map(function(s,k){return '<div class="card stat" style="'+(k===2?'background:var(--red);border-color:var(--red)':'')+'"><div class="lbl" style="'+(k===2?'color:#FFE0E3':'')+'">'+s[0]+'</div><b>'+s[1]+'</b></div>'}).join('');
-  $('hcats').innerHTML=Object.keys(CATS).map(function(k){return '<div class="card"><b>'+CATS[k]+'</b><div style="color:var(--mu);font-size:14px;margin-top:6px">Base severity: '+(BASE[k]>=3?'High':BASE[k]>=2?'Medium':'Low')+'</div></div>'}).join('');
+  $('hcats').innerHTML=Object.keys(CATS).map(function(k){return '<div class="card"><b>'+ICO[k]+' '+CATS[k]+'</b><div style="color:var(--mu);font-size:14px;margin-top:6px">Base severity: '+(BASE[k]>=3?'High':BASE[k]>=2?'Medium':'Low')+'</div></div>'}).join('');
 }
 $('tform').addEventListener('submit',function(e){
   e.preventDefault();var id=$('tid').value.trim().toUpperCase(),i=mem.filter(function(x){return x.id===id})[0];
