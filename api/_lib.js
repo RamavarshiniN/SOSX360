@@ -62,8 +62,9 @@ export function safeEqual(a, b) { const x = Buffer.from(String(a)), y = Buffer.f
 
 // ---- helpers ----
 export async function body(req) {
-  if (req.body && typeof req.body === 'object') return req.body;
-  if (typeof req.body === 'string') { try { return JSON.parse(req.body); } catch { return {}; } }
+  let pre; try { pre = req.body; } catch { return {}; } // Vercel throws on malformed JSON
+  if (pre && typeof pre === 'object') return pre;
+  if (typeof pre === 'string') { try { return JSON.parse(pre); } catch { return {}; } }
   let d = ''; for await (const c of req) d += c; try { return JSON.parse(d || '{}'); } catch { return {}; }
 }
 export function send(res, code, data) { res.statusCode = code; res.setHeader('Content-Type', 'application/json'); res.setHeader('Cache-Control', 'no-store'); res.end(JSON.stringify(data)); }
